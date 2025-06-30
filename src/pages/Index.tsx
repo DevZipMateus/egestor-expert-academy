@@ -33,10 +33,10 @@ const Index = () => {
             {/* Text Content */}
             <div className="space-y-6">
               <h2 className="text-4xl font-bold text-white leading-tight drop-shadow-lg">
-                Administre sua empresa com excelência usando o eGestor
+                Expert em eGestor
               </h2>
               <p className="text-lg text-white drop-shadow-md">
-                Aprenda as melhores práticas para gerenciar seu negócio de forma eficiente e profissional.
+                Fazendo esse pequeno curso você terá condições de administrar sua empresa com excelência usando o software eGestor.
               </p>
               <Button 
                 onClick={() => navigate('/cadastro')}
