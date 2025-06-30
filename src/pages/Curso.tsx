@@ -5,30 +5,16 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 
 const cursoData = {
   1: {
-    titulo: "Cadastro de Clientes e Fornecedores",
+    titulo: "Expert em eGestor",
     conteudo: (
       <div className="space-y-6">
         <h2 className="text-2xl font-bold text-gray-900">
-          Cadastro de Clientes e Fornecedores
+          Expert em eGestor
         </h2>
         <div className="bg-white rounded-lg p-6 shadow-sm border">
           <p className="text-lg text-gray-700 mb-4">
-            Aprenda como cadastrar corretamente clientes e fornecedores no eGestor:
+            Fazendo esse pequeno curso você terá condições de administrar sua empresa com excelência usando o software eGestor.
           </p>
-          <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-              <span className="text-gray-700">Dados obrigatórios e opcionais</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-              <span className="text-gray-700">Erros comuns a evitar</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-              <span className="text-gray-700">Organização por categorias</span>
-            </div>
-          </div>
         </div>
       </div>
     ),
@@ -136,7 +122,7 @@ const Curso = () => {
             onClick={goToNext}
             className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white"
           >
-            <span>{currentSlide === totalSlides ? 'FINALIZAR' : 'PRÓXIMO'}</span>
+            <span>{currentSlide === totalSlides ? 'FINALIZAR' : 'Começar'}</span>
             <ArrowRight className="w-4 h-4" />
           </Button>
         </div>
