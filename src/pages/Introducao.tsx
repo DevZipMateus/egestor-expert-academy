@@ -1,17 +1,13 @@
 
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 const Introducao = () => {
   const navigate = useNavigate();
 
-  const goToPrevious = () => {
-    navigate('/cadastro');
-  };
-
   const goToNext = () => {
-    navigate('/curso/1');
+    navigate('/login');
   };
 
   return (
@@ -71,16 +67,7 @@ const Introducao = () => {
         </div>
 
         {/* Navigation */}
-        <div className="flex justify-between items-center mt-8">
-          <Button
-            onClick={goToPrevious}
-            variant="outline"
-            className="flex items-center space-x-2 border-red-600 text-red-600 hover:bg-red-50"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>ANTERIOR</span>
-          </Button>
-
+        <div className="flex justify-end mt-8">
           <Button
             onClick={goToNext}
             className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white"

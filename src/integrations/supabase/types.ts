@@ -9,7 +9,65 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      progresso_usuario: {
+        Row: {
+          aulas_assistidas: number[] | null
+          data_atualizacao: string | null
+          id: string
+          progresso_percentual: number | null
+          ultima_aula: number | null
+          usuario_id: string | null
+        }
+        Insert: {
+          aulas_assistidas?: number[] | null
+          data_atualizacao?: string | null
+          id?: string
+          progresso_percentual?: number | null
+          ultima_aula?: number | null
+          usuario_id?: string | null
+        }
+        Update: {
+          aulas_assistidas?: number[] | null
+          data_atualizacao?: string | null
+          id?: string
+          progresso_percentual?: number | null
+          ultima_aula?: number | null
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "progresso_usuario_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: true
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      usuarios: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          nome: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          nome: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          nome?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

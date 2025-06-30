@@ -39,7 +39,7 @@ const Index = () => {
                 Fazendo esse pequeno curso você terá condições de administrar sua empresa com excelência usando o software eGestor.
               </p>
               <Button 
-                onClick={() => navigate('/cadastro')}
+                onClick={() => navigate('/introducao')}
                 className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-lg shadow-lg"
               >
                 Começar
