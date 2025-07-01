@@ -158,6 +158,7 @@ const Curso = () => {
             title={currentContent.title}
             question={currentContent.question!}
             options={currentContent.options!}
+            explanation={currentContent.explanation}
             onAnswer={handleExerciseAnswer}
           />
         );

@@ -10,10 +10,11 @@ interface ExerciseSlideProps {
     text: string;
     correct: boolean;
   }[];
+  explanation?: string;
   onAnswer: (correct: boolean) => void;
 }
 
-const ExerciseSlide: React.FC<ExerciseSlideProps> = ({ title, question, options, onAnswer }) => {
+const ExerciseSlide: React.FC<ExerciseSlideProps> = ({ title, question, options, explanation, onAnswer }) => {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [answered, setAnswered] = useState(false);
@@ -91,20 +92,31 @@ const ExerciseSlide: React.FC<ExerciseSlideProps> = ({ title, question, options,
         )}
 
         {showResult && (
-          <div className={`mt-4 p-4 rounded-lg ${
-            options[selectedOption!].correct 
-              ? 'bg-green-100 border border-green-300' 
-              : 'bg-red-100 border border-red-300'
-          }`}>
-            <p className={`font-semibold ${
-              options[selectedOption!].correct ? 'text-green-800' : 'text-red-800'
+          <div className="space-y-4">
+            <div className={`p-4 rounded-lg ${
+              options[selectedOption!].correct 
+                ? 'bg-green-100 border border-green-300' 
+                : 'bg-red-100 border border-red-300'
             }`}>
-              {options[selectedOption!].correct ? '✅ Correto!' : '❌ Incorreto!'}
-            </p>
-            {!options[selectedOption!].correct && (
-              <p className="text-sm text-red-700 mt-2">
-                A resposta correta é: {options.find(opt => opt.correct)?.text}
+              <p className={`font-semibold ${
+                options[selectedOption!].correct ? 'text-green-800' : 'text-red-800'
+              }`}>
+                {options[selectedOption!].correct ? '✅ Correto!' : '❌ Incorreto!'}
               </p>
+              {!options[selectedOption!].correct && (
+                <p className="text-sm text-red-700 mt-2">
+                  A resposta correta é: {options.find(opt => opt.correct)?.text}
+                </p>
+              )}
+            </div>
+
+            {explanation && (
+              <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                <h4 className="font-semibold text-blue-800 mb-2 font-opensans">Explicação:</h4>
+                <p className="text-blue-700 text-sm font-opensans leading-relaxed">
+                  {explanation}
+                </p>
+              </div>
             )}
           </div>
         )}
