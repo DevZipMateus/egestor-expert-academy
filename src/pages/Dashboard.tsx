@@ -1,9 +1,9 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Play, RotateCcw, LogOut } from "lucide-react";
 import { toast } from "sonner";
 
@@ -18,10 +18,18 @@ const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [progresso, setProgresso] = useState<ProgressoUsuario | null>(null);
   const [loading, setLoading] = useState(true);
+  const { role, loading: roleLoading, isAdmin } = useUserRole(user);
 
   useEffect(() => {
     checkAuth();
   }, []);
+
+  // Redirecionar admins para o painel administrativo
+  useEffect(() => {
+    if (!roleLoading && isAdmin) {
+      navigate('/admin');
+    }
+  }, [roleLoading, isAdmin, navigate]);
 
   const checkAuth = async () => {
     try {
@@ -101,7 +109,7 @@ const Dashboard = () => {
     navigate('/');
   };
 
-  if (loading) {
+  if (loading || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#f7f7f7' }}>
         <div className="text-center">
@@ -110,6 +118,11 @@ const Dashboard = () => {
         </div>
       </div>
     );
+  }
+
+  // Se for admin, não renderiza nada pois será redirecionado
+  if (isAdmin) {
+    return null;
   }
 
   return (

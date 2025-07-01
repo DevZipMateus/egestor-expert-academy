@@ -44,6 +44,133 @@ export type Database = {
           },
         ]
       }
+      question_options: {
+        Row: {
+          correta: boolean | null
+          created_at: string | null
+          id: string
+          ordem: number
+          question_id: string | null
+          texto: string
+        }
+        Insert: {
+          correta?: boolean | null
+          created_at?: string | null
+          id?: string
+          ordem: number
+          question_id?: string | null
+          texto: string
+        }
+        Update: {
+          correta?: boolean | null
+          created_at?: string | null
+          id?: string
+          ordem?: number
+          question_id?: string | null
+          texto?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_options_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      questions: {
+        Row: {
+          created_at: string | null
+          explicacao: string | null
+          id: string
+          pergunta: string
+          slide_id: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          explicacao?: string | null
+          id?: string
+          pergunta: string
+          slide_id?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          explicacao?: string | null
+          id?: string
+          pergunta?: string
+          slide_id?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questions_slide_id_fkey"
+            columns: ["slide_id"]
+            isOneToOne: false
+            referencedRelation: "slides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      slides: {
+        Row: {
+          ativo: boolean | null
+          conteudo: string | null
+          created_at: string | null
+          id: number
+          ordem: number
+          tipo: string
+          titulo: string
+          updated_at: string | null
+          video_url: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          conteudo?: string | null
+          created_at?: string | null
+          id?: number
+          ordem: number
+          tipo: string
+          titulo: string
+          updated_at?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          conteudo?: string | null
+          created_at?: string | null
+          id?: number
+          ordem?: number
+          tipo?: string
+          titulo?: string
+          updated_at?: string | null
+          video_url?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       usuarios: {
         Row: {
           created_at: string | null
@@ -73,10 +200,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "admin" | "student"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -191,6 +321,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["admin", "student"],
+    },
   },
 } as const
