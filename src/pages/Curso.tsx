@@ -1,7 +1,7 @@
 
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Menu } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -11,6 +11,9 @@ import ExerciseSlide from "@/components/ExerciseSlide";
 import AttentionSlide from "@/components/AttentionSlide";
 import ExamSlide from "@/components/ExamSlide";
 import { toast } from "sonner";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import CourseSidebar from "@/components/CourseSidebar";
+import SettingsDropdown from "@/components/SettingsDropdown";
 
 const Curso = () => {
   const { slide } = useParams();
@@ -99,11 +102,6 @@ const Curso = () => {
         toast.error("Você precisa ser aprovado no exame para continuar.");
       }
     }
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/');
   };
 
   const handleExerciseAnswer = (correct: boolean) => {
@@ -208,69 +206,71 @@ const Curso = () => {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f7f7f7' }}>
-      <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet" />
-      
-      <header className="bg-white shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold font-roboto" style={{ color: '#52555b' }}>
-              Expert eGestor
-            </h1>
-            <p className="text-sm font-opensans mt-1" style={{ color: '#52555b' }}>
-              Slide {currentSlide} de {totalSlides}
-            </p>
-          </div>
-          <Button 
-            onClick={handleLogout}
-            variant="outline"
-            className="border-red-600 hover:bg-red-50"
-            style={{ color: '#d61c00', borderColor: '#d61c00' }}
-          >
-            Sair
-          </Button>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full" style={{ backgroundColor: '#f7f7f7' }}>
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet" />
+        
+        <CourseSidebar />
+        
+        <div className="flex-1 flex flex-col">
+          <header className="bg-[#d61c00] shadow-sm">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+              <div className="flex items-center gap-4">
+                <SidebarTrigger className="text-white hover:bg-white/20" />
+                <div>
+                  <h1 className="text-2xl font-bold font-roboto text-white">
+                    Expert eGestor
+                  </h1>
+                  <p className="text-sm font-opensans mt-1 text-white/90">
+                    Slide {currentSlide} de {totalSlides}
+                  </p>
+                </div>
+              </div>
+              <SettingsDropdown user={user} />
+            </div>
+          </header>
+
+          <main className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="rounded-lg p-8" style={{ backgroundColor: '#f7f7f7' }}>
+              {renderSlideContent()}
+            </div>
+
+            <div className="flex justify-between items-center mt-8">
+              <Button
+                onClick={goToPrevious}
+                variant="outline"
+                className="flex items-center space-x-2"
+                style={{ color: '#52555b', borderColor: '#52555b' }}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>ANTERIOR</span>
+              </Button>
+
+              <div className="flex space-x-2">
+                {Array.from({ length: totalSlides }, (_, index) => (
+                  <div
+                    key={index}
+                    className={`w-3 h-3 rounded-full ${
+                      index + 1 === currentSlide ? 'bg-[#d61c00]' : 'bg-gray-300'
+                    }`}
+                  />
+                ))}
+              </div>
+
+              <Button
+                onClick={goToNext}
+                className="flex items-center space-x-2 text-white"
+                style={{ backgroundColor: '#d61c00' }}
+                disabled={currentSlide === 47 && !examPassed}
+              >
+                <span>{currentSlide === totalSlides ? 'FINALIZAR' : 'PRÓXIMO'}</span>
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </main>
         </div>
-      </header>
-
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="rounded-lg p-8" style={{ backgroundColor: '#f7f7f7' }}>
-          {renderSlideContent()}
-        </div>
-
-        <div className="flex justify-between items-center mt-8">
-          <Button
-            onClick={goToPrevious}
-            variant="outline"
-            className="flex items-center space-x-2"
-            style={{ color: '#52555b', borderColor: '#52555b' }}
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>ANTERIOR</span>
-          </Button>
-
-          <div className="flex space-x-2">
-            {Array.from({ length: totalSlides }, (_, index) => (
-              <div
-                key={index}
-                className={`w-3 h-3 rounded-full ${
-                  index + 1 === currentSlide ? 'bg-[#d61c00]' : 'bg-gray-300'
-                }`}
-              />
-            ))}
-          </div>
-
-          <Button
-            onClick={goToNext}
-            className="flex items-center space-x-2 text-white"
-            style={{ backgroundColor: '#d61c00' }}
-            disabled={currentSlide === 47 && !examPassed}
-          >
-            <span>{currentSlide === totalSlides ? 'FINALIZAR' : 'PRÓXIMO'}</span>
-            <ArrowRight className="w-4 h-4" />
-          </Button>
-        </div>
-      </main>
-    </div>
+      </div>
+    </SidebarProvider>
   );
 };
 
