@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
-  nome: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+  nome: z.string().min(2, "Nome deve ter pelo menos 2 caracteres").optional(),
   email: z.string().email("Por favor, insira um e-mail válido"),
   senha: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
 });
@@ -30,23 +30,44 @@ const Login = () => {
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     mode: "onChange",
+    defaultValues: {
+      nome: "",
+      email: "",
+      senha: "",
+    }
   });
 
   const onSubmit = async (data: FormData) => {
     setLoading(true);
+    console.log('Tentando fazer login/cadastro com:', { email: data.email, isLogin });
+    
     try {
       if (isLogin) {
+        // Processo de login
         const { data: authData, error } = await supabase.auth.signInWithPassword({
           email: data.email,
           password: data.senha,
         });
 
         if (error) {
+          console.error('Erro no login:', error);
           toast.error("Erro ao fazer login: " + error.message);
           return;
         }
 
         if (authData.user) {
+          console.log('Login bem-sucedido, usuário:', authData.user);
+          
+          // Verificar se é admin
+          const { data: roleData, error: roleError } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', authData.user.id)
+            .single();
+
+          console.log('Role do usuário:', roleData, roleError);
+
+          // Verificar/criar entrada na tabela usuarios
           const { data: userData, error: userError } = await supabase
             .from('usuarios')
             .select('*')
@@ -54,25 +75,38 @@ const Login = () => {
             .single();
 
           if (userError && userError.code === 'PGRST116') {
+            // Usuário não existe na tabela usuarios, criar
             const { error: insertError } = await supabase
               .from('usuarios')
               .insert([
                 {
                   id: authData.user.id,
-                  nome: data.nome,
+                  nome: data.nome || authData.user.email?.split('@')[0] || 'Usuário',
                   email: data.email,
                 }
               ]);
 
             if (insertError) {
-              console.error('Erro ao criar usuário:', insertError);
+              console.error('Erro ao criar usuário na tabela usuarios:', insertError);
             }
           }
 
           toast.success("Login realizado com sucesso!");
-          navigate('/dashboard');
+          
+          // Redirecionar baseado no role
+          if (roleData?.role === 'admin') {
+            navigate('/admin');
+          } else {
+            navigate('/dashboard');
+          }
         }
       } else {
+        // Processo de cadastro
+        if (!data.nome) {
+          toast.error("Nome é obrigatório para cadastro");
+          return;
+        }
+
         const { data: authData, error } = await supabase.auth.signUp({
           email: data.email,
           password: data.senha,
@@ -82,11 +116,15 @@ const Login = () => {
         });
 
         if (error) {
+          console.error('Erro no cadastro:', error);
           toast.error("Erro ao criar conta: " + error.message);
           return;
         }
 
         if (authData.user) {
+          console.log('Cadastro bem-sucedido, usuário:', authData.user);
+
+          // Criar entrada na tabela usuarios
           const { error: insertError } = await supabase
             .from('usuarios')
             .insert([
@@ -106,11 +144,29 @@ const Login = () => {
         }
       }
     } catch (error) {
-      console.error('Erro:', error);
+      console.error('Erro inesperado:', error);
       toast.error("Erro inesperado. Tente novamente.");
     } finally {
       setLoading(false);
     }
+  };
+
+  // Função para pré-definir login admin
+  const handleAdminLogin = () => {
+    const form = document.querySelector('form') as HTMLFormElement;
+    const emailInput = form?.querySelector('#email') as HTMLInputElement;
+    const senhaInput = form?.querySelector('#senha') as HTMLInputElement;
+    
+    if (emailInput && senhaInput) {
+      emailInput.value = 'mateus.pinto@zipline.com.br';
+      senhaInput.value = 'zipline';
+      
+      // Trigger form validation
+      emailInput.dispatchEvent(new Event('input', { bubbles: true }));
+      senhaInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    
+    setIsLogin(true);
   };
 
   return (
@@ -125,6 +181,18 @@ const Login = () => {
           <p className="font-opensans" style={{ color: '#52555b' }}>
             {isLogin ? 'Faça login para continuar' : 'Crie sua conta para começar o curso'}
           </p>
+        </div>
+
+        {/* Botão para login admin */}
+        <div className="mb-4">
+          <Button 
+            type="button"
+            onClick={handleAdminLogin}
+            variant="outline"
+            className="w-full text-sm"
+          >
+            Login Admin (Teste)
+          </Button>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
