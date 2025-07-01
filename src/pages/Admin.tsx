@@ -18,33 +18,43 @@ const Admin = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
   const { role, loading: roleLoading, isAdmin } = useUserRole(user);
 
   useEffect(() => {
     checkAuth();
   }, []);
 
+  // Só redireciona após ter verificado tanto auth quanto role, e apenas uma vez
   useEffect(() => {
-    if (!roleLoading && !isAdmin && user) {
-      toast.error("Acesso negado. Você não tem permissão de administrador.");
-      navigate('/dashboard');
+    if (authChecked && !roleLoading) {
+      if (!user) {
+        navigate('/login');
+        return;
+      }
+      
+      if (!isAdmin && role === 'student') {
+        toast.error("Acesso negado. Você não tem permissão de administrador.");
+        navigate('/dashboard');
+      }
     }
-  }, [roleLoading, isAdmin, user, navigate]);
+  }, [authChecked, roleLoading, user, isAdmin, role, navigate]);
 
   const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        navigate('/login');
+        setAuthChecked(true);
+        setLoading(false);
         return;
       }
 
       setUser(session.user);
     } catch (error) {
       console.error('Erro ao verificar autenticação:', error);
-      navigate('/login');
     } finally {
+      setAuthChecked(true);
       setLoading(false);
     }
   };
@@ -54,7 +64,8 @@ const Admin = () => {
     navigate('/');
   };
 
-  if (loading || roleLoading) {
+  // Mostrar loading enquanto verifica auth e role
+  if (loading || roleLoading || !authChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#f7f7f7' }}>
         <div className="text-center">
@@ -65,8 +76,9 @@ const Admin = () => {
     );
   }
 
-  if (!isAdmin) {
-    return null; // Componente será redirecionado pelo useEffect
+  // Se não é admin, não renderiza nada (será redirecionado)
+  if (!user || !isAdmin) {
+    return null;
   }
 
   return (

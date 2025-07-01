@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -18,25 +19,34 @@ const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [progresso, setProgresso] = useState<ProgressoUsuario | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
   const { role, loading: roleLoading, isAdmin } = useUserRole(user);
 
   useEffect(() => {
     checkAuth();
   }, []);
 
-  // Redirecionar admins para o painel administrativo
+  // Só redireciona após ter verificado tanto auth quanto role, e apenas uma vez
   useEffect(() => {
-    if (!roleLoading && isAdmin) {
-      navigate('/admin');
+    if (authChecked && !roleLoading) {
+      if (!user) {
+        navigate('/login');
+        return;
+      }
+      
+      if (isAdmin && role === 'admin') {
+        navigate('/admin');
+      }
     }
-  }, [roleLoading, isAdmin, navigate]);
+  }, [authChecked, roleLoading, user, isAdmin, role, navigate]);
 
   const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        navigate('/login');
+        setAuthChecked(true);
+        setLoading(false);
         return;
       }
 
@@ -44,8 +54,8 @@ const Dashboard = () => {
       await buscarProgresso(session.user.id);
     } catch (error) {
       console.error('Erro ao verificar autenticação:', error);
-      navigate('/login');
     } finally {
+      setAuthChecked(true);
       setLoading(false);
     }
   };
@@ -109,7 +119,8 @@ const Dashboard = () => {
     navigate('/');
   };
 
-  if (loading || roleLoading) {
+  // Mostrar loading enquanto verifica auth e role
+  if (loading || roleLoading || !authChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#f7f7f7' }}>
         <div className="text-center">
@@ -120,8 +131,8 @@ const Dashboard = () => {
     );
   }
 
-  // Se for admin, não renderiza nada pois será redirecionado
-  if (isAdmin) {
+  // Se for admin, não renderiza nada (será redirecionado)
+  if (!user || isAdmin) {
     return null;
   }
 
