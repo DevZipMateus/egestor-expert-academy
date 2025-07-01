@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { User } from "@supabase/supabase-js";
 import VideoSlide from "@/components/VideoSlide";
 import ExerciseSlide from "@/components/ExerciseSlide";
 import AttentionSlide from "@/components/AttentionSlide";
@@ -14,13 +13,15 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import CourseSidebar from "@/components/CourseSidebar";
 import SettingsDropdown from "@/components/SettingsDropdown";
 import { useCourseData } from "@/hooks/useCourseData";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Curso = () => {
   const { slide } = useParams();
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
+  const { user, isAuthenticated } = useAuth();
   const [examScore, setExamScore] = useState<number | null>(null);
   const [examPassed, setExamPassed] = useState<boolean>(false);
+  const [supabaseUserId, setSupabaseUserId] = useState<string | null>(null);
   const currentSlide = parseInt(slide || '1');
   
   const { 
@@ -36,34 +37,75 @@ const Curso = () => {
   const currentContent = getSlideByOrder(currentSlide);
 
   useEffect(() => {
-    checkAuth();
-  }, []);
-
-  useEffect(() => {
-    if (user && currentSlide) {
-      updateProgress(currentSlide);
-    }
-  }, [user, currentSlide]);
-
-  const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
+    if (!isAuthenticated) {
       navigate('/login');
       return;
     }
+    
+    // Criar ou encontrar usuário no Supabase para tracking de progresso
+    createOrFindSupabaseUser();
+  }, [isAuthenticated, navigate]);
 
-    setUser(session.user);
+  useEffect(() => {
+    if (supabaseUserId && currentSlide) {
+      updateProgress(currentSlide);
+    }
+  }, [supabaseUserId, currentSlide]);
+
+  const createOrFindSupabaseUser = async () => {
+    if (!user) return;
+
+    try {
+      // Primeiro, verificar se o usuário já existe na tabela usuarios
+      const { data: existingUser } = await supabase
+        .from('usuarios')
+        .select('id')
+        .eq('email', user.email)
+        .single();
+
+      if (existingUser) {
+        setSupabaseUserId(existingUser.id);
+        return;
+      }
+
+      // Se não existir, criar novo usuário
+      const { data: newUser, error } = await supabase
+        .from('usuarios')
+        .insert([{
+          nome: user.nome,
+          email: user.email
+        }])
+        .select('id')
+        .single();
+
+      if (error) {
+        console.error('Erro ao criar usuário no Supabase:', error);
+        return;
+      }
+
+      if (newUser) {
+        setSupabaseUserId(newUser.id);
+        
+        // Criar registro de progresso
+        await supabase
+          .from('progresso_usuario')
+          .insert([{
+            usuario_id: newUser.id
+          }]);
+      }
+    } catch (error) {
+      console.error('Erro ao gerenciar usuário no Supabase:', error);
+    }
   };
 
   const updateProgress = async (aulaAtual: number) => {
-    if (!user) return;
+    if (!supabaseUserId) return;
 
     try {
       const { data: currentProgress } = await supabase
         .from('progresso_usuario')
         .select('aulas_assistidas')
-        .eq('usuario_id', user.id)
+        .eq('usuario_id', supabaseUserId)
         .single();
 
       const aulasAssistidas = currentProgress?.aulas_assistidas || [];
@@ -82,7 +124,7 @@ const Curso = () => {
           progresso_percentual: progressoPercentual,
           data_atualizacao: new Date().toISOString()
         })
-        .eq('usuario_id', user.id);
+        .eq('usuario_id', supabaseUserId);
 
       if (error) {
         console.error('Erro ao atualizar progresso:', error);
@@ -234,6 +276,18 @@ const Curso = () => {
   if (!currentContent && !loading) {
     navigate('/curso/1');
     return null;
+  }
+
+  // Mostrar loading se ainda não temos usuário autenticado
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Verificando autenticação...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
