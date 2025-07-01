@@ -1,11 +1,10 @@
 
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Menu } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
-import { courseSlides, getTotalSlides, getSlideById } from "@/data/courseData";
 import VideoSlide from "@/components/VideoSlide";
 import ExerciseSlide from "@/components/ExerciseSlide";
 import AttentionSlide from "@/components/AttentionSlide";
@@ -14,6 +13,7 @@ import { toast } from "sonner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import CourseSidebar from "@/components/CourseSidebar";
 import SettingsDropdown from "@/components/SettingsDropdown";
+import { useCourseData } from "@/hooks/useCourseData";
 
 const Curso = () => {
   const { slide } = useParams();
@@ -22,9 +22,18 @@ const Curso = () => {
   const [examScore, setExamScore] = useState<number | null>(null);
   const [examPassed, setExamPassed] = useState<boolean>(false);
   const currentSlide = parseInt(slide || '1');
-  const totalSlides = getTotalSlides();
   
-  const currentContent = getSlideById(currentSlide);
+  const { 
+    loading, 
+    error, 
+    useStaticData, 
+    getSlideByOrder, 
+    getQuestionBySlideId, 
+    getTotalSlidesCount 
+  } = useCourseData();
+
+  const totalSlides = getTotalSlidesCount();
+  const currentContent = getSlideByOrder(currentSlide);
 
   useEffect(() => {
     checkAuth();
@@ -124,7 +133,40 @@ const Curso = () => {
   };
 
   const renderSlideContent = () => {
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center py-20">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 ml-4">Carregando curso...</p>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
+          <p className="text-red-800">Erro ao carregar o curso. Tentando usar dados locais...</p>
+        </div>
+      );
+    }
+
     if (!currentContent) return null;
+
+    // Para slides de exercício, buscar pergunta específica
+    if (currentContent.type === 'exercise') {
+      const questionData = getQuestionBySlideId(currentSlide);
+      if (questionData) {
+        return (
+          <ExerciseSlide
+            title={currentContent.title}
+            question={questionData.question}
+            options={questionData.options}
+            explanation={questionData.explanation}
+            onAnswer={handleExerciseAnswer}
+          />
+        );
+      }
+    }
 
     switch (currentContent.type) {
       case 'content':
@@ -150,22 +192,11 @@ const Curso = () => {
           );
         }
       
-      case 'exercise':
-        return (
-          <ExerciseSlide
-            title={currentContent.title}
-            question={currentContent.question!}
-            options={currentContent.options!}
-            explanation={currentContent.explanation}
-            onAnswer={handleExerciseAnswer}
-          />
-        );
-      
       case 'attention':
         return (
           <AttentionSlide
             title={currentContent.title}
-            content={currentContent.content!}
+            content={currentContent.content || 'Preste atenção nas próximas informações importantes.'}
           />
         );
       
@@ -200,7 +231,7 @@ const Curso = () => {
     }
   };
 
-  if (!currentContent) {
+  if (!currentContent && !loading) {
     navigate('/curso/1');
     return null;
   }
@@ -223,6 +254,11 @@ const Curso = () => {
                   </h1>
                   <p className="text-sm font-opensans mt-1 text-white/90">
                     Slide {currentSlide} de {totalSlides}
+                    {useStaticData && (
+                      <span className="ml-2 text-xs bg-yellow-500 text-black px-2 py-1 rounded">
+                        Modo Offline
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>
@@ -261,7 +297,7 @@ const Curso = () => {
                 onClick={goToNext}
                 className="flex items-center space-x-2 text-white"
                 style={{ backgroundColor: '#d61c00' }}
-                disabled={currentSlide === 47 && !examPassed}
+                disabled={currentSlide === totalSlides && !examPassed}
               >
                 <span>{currentSlide === totalSlides ? 'FINALIZAR' : 'PRÓXIMO'}</span>
                 <ArrowRight className="w-4 h-4" />

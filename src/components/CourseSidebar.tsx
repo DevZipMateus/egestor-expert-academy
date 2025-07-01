@@ -11,13 +11,14 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { courseSlides } from '@/data/courseData';
+import { useCourseData } from '@/hooks/useCourseData';
 import { Play, HelpCircle, AlertTriangle, FileText, Trophy } from 'lucide-react';
 
 const CourseSidebar = () => {
   const navigate = useNavigate();
   const { slide } = useParams();
   const currentSlide = parseInt(slide || '1');
+  const { slides, loading, useStaticData } = useCourseData();
 
   const getSlideIcon = (type: string) => {
     switch (type) {
@@ -53,18 +54,33 @@ const CourseSidebar = () => {
     }
   };
 
-  const groupedSlides = courseSlides.reduce((acc, slide) => {
-    const type = getSlideTypeLabel(slide.type);
+  const handleSlideClick = (slideOrder: number) => {
+    navigate(`/curso/${slideOrder}`);
+  };
+
+  if (loading) {
+    return (
+      <Sidebar className="w-80 bg-white border-r border-gray-200">
+        <SidebarContent>
+          <div className="p-4 border-b border-gray-200">
+            <h2 className="text-lg font-bold text-[#52555b] font-roboto">
+              Carregando...
+            </h2>
+          </div>
+        </SidebarContent>
+      </Sidebar>
+    );
+  }
+
+  // Agrupar slides por tipo para melhor organização
+  const groupedSlides = slides.reduce((acc, slide) => {
+    const type = getSlideTypeLabel(slide.tipo);
     if (!acc[type]) {
       acc[type] = [];
     }
     acc[type].push(slide);
     return acc;
-  }, {} as Record<string, typeof courseSlides>);
-
-  const handleSlideClick = (slideId: number) => {
-    navigate(`/curso/${slideId}`);
-  };
+  }, {} as Record<string, typeof slides>);
 
   return (
     <Sidebar className="w-80 bg-white border-r border-gray-200">
@@ -73,23 +89,26 @@ const CourseSidebar = () => {
           <h2 className="text-lg font-bold text-[#52555b] font-roboto">
             Navegação do Curso
           </h2>
+          {useStaticData && (
+            <p className="text-xs text-yellow-600 mt-1">Modo Offline</p>
+          )}
         </div>
         
-        {Object.entries(groupedSlides).map(([groupType, slides]) => (
+        {Object.entries(groupedSlides).map(([groupType, slidesList]) => (
           <SidebarGroup key={groupType}>
             <SidebarGroupLabel className="text-[#52555b] font-opensans font-semibold">
               {groupType}
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {slides.map((slideData) => {
-                  const Icon = getSlideIcon(slideData.type);
-                  const isActive = currentSlide === slideData.id;
+                {slidesList.map((slideData) => {
+                  const Icon = getSlideIcon(slideData.tipo);
+                  const isActive = currentSlide === slideData.ordem;
                   
                   return (
                     <SidebarMenuItem key={slideData.id}>
                       <SidebarMenuButton
-                        onClick={() => handleSlideClick(slideData.id)}
+                        onClick={() => handleSlideClick(slideData.ordem)}
                         className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
                           isActive 
                             ? 'bg-[#d61c00] text-white' 
@@ -99,10 +118,10 @@ const CourseSidebar = () => {
                         <Icon className="w-4 h-4" />
                         <div className="flex-1 text-left">
                           <div className="text-sm font-medium">
-                            Slide {slideData.id}
+                            Slide {slideData.ordem}
                           </div>
                           <div className="text-xs opacity-75 truncate">
-                            {slideData.title}
+                            {slideData.titulo}
                           </div>
                         </div>
                       </SidebarMenuButton>
