@@ -115,7 +115,7 @@ const Login = () => {
     }
   };
 
-  // Função melhorada para login admin
+  // Função simplificada para login admin
   const handleAdminLogin = async () => {
     setLoading(true);
     const adminEmail = 'mateus.pinto@zipline.com.br';
@@ -123,6 +123,14 @@ const Login = () => {
     
     try {
       console.log('Iniciando processo de login admin...');
+      
+      // Primeiro preencher os campos do formulário para transparência
+      setValue('email', adminEmail);
+      setValue('senha', adminPassword);
+      setIsLogin(true);
+      
+      // Aguardar um pouco para evitar rate limiting
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Tentar fazer login diretamente
       const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
@@ -137,51 +145,22 @@ const Login = () => {
         return;
       }
 
-      // Se login falhou por email não confirmado, informar o usuário
-      if (loginError?.message?.includes('Email not confirmed')) {
-        console.log('Email não confirmado para admin');
-        toast.error("Email do admin não está confirmado. Por favor, verifique seu email ou desabilite a confirmação por email nas configurações do Supabase.");
-        return;
-      }
-
-      // Se login falhou por credenciais inválidas, tentar criar conta
-      if (loginError?.message?.includes('Invalid login credentials')) {
-        console.log('Credenciais inválidas, tentando criar conta admin...');
+      // Se login falhou, mostrar instruções claras baseadas no erro
+      if (loginError) {
+        console.error('Erro no login admin:', loginError);
         
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: adminEmail,
-          password: adminPassword,
-          options: {
-            emailRedirectTo: `${window.location.origin}/admin`,
-            data: {
-              nome: 'Administrador',
-            }
-          },
-        });
-
-        if (signUpError) {
-          console.error('Erro ao criar conta admin:', signUpError);
-          
-          if (signUpError.message.includes('already registered')) {
-            toast.error("Conta admin já existe mas há um problema com as credenciais. Verifique as configurações do Supabase.");
-          } else if (signUpError.message.includes('rate_limit')) {
-            toast.error("Muitas tentativas de cadastro. Aguarde alguns minutos antes de tentar novamente.");
-          } else {
-            toast.error("Erro ao processar login admin: " + signUpError.message);
-          }
-          return;
-        }
-
-        if (signUpData.user) {
-          console.log('Conta admin criada com sucesso');
-          toast.success("Conta admin criada! Verifique seu email para confirmar a conta.");
-          return;
+        if (loginError.message.includes('Email not confirmed')) {
+          toast.error("⚠️ Email do admin não confirmado. Para resolver:\n\n1. Acesse o Supabase Dashboard\n2. Vá em Authentication > Settings\n3. Desabilite 'Enable email confirmations'\n4. Ou confirme o email manualmente em Authentication > Users", {
+            duration: 10000,
+          });
+        } else if (loginError.message.includes('Invalid login credentials')) {
+          toast.error("Credenciais inválidas. Verifique se o admin foi criado corretamente.");
+        } else if (loginError.message.includes('rate_limit')) {
+          toast.error("Muitas tentativas recentes. Aguarde alguns minutos antes de tentar novamente.");
+        } else {
+          toast.error("Erro no login admin: " + loginError.message);
         }
       }
-
-      // Para outros erros de login
-      console.error('Erro no login admin:', loginError);
-      toast.error("Erro ao fazer login admin: " + (loginError?.message || 'Erro desconhecido'));
 
     } catch (error) {
       console.error('Erro inesperado no login admin:', error);
@@ -189,11 +168,6 @@ const Login = () => {
     } finally {
       setLoading(false);
     }
-
-    // Preencher os campos do formulário
-    setValue('email', adminEmail);
-    setValue('senha', adminPassword);
-    setIsLogin(true);
   };
 
   return (
@@ -207,6 +181,14 @@ const Login = () => {
           </h1>
           <p className="font-opensans" style={{ color: '#52555b' }}>
             {isLogin ? 'Faça login para continuar' : 'Crie sua conta para começar o curso'}
+          </p>
+        </div>
+
+        {/* Instruções para configurar Supabase */}
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-xs text-yellow-800 font-opensans">
+            <strong>Para desenvolvedores:</strong> Se o login admin falhar por "email não confirmado", 
+            desabilite a confirmação por email no Supabase (Authentication → Settings → Enable email confirmations = OFF)
           </p>
         </div>
 
