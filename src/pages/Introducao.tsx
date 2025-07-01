@@ -11,24 +11,24 @@ const Introducao = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+    <div className="min-h-screen" style={{ backgroundColor: '#f7f7f7' }}>
+      <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet" />
+      
       <header className="bg-white shadow-sm">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h1 className="text-2xl font-bold text-gray-900">eGestor Expert Academy</h1>
+          <h1 className="text-2xl font-bold font-roboto" style={{ color: '#52555b' }}>
+            Expert eGestor Academy
+          </h1>
         </div>
       </header>
 
-      {/* Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg p-8 shadow-sm">
-          {/* Title */}
-          <h1 className="text-4xl font-bold text-gray-700 text-center mb-8">
+          <h1 className="text-4xl font-bold text-center mb-8 font-roboto" style={{ color: '#52555b' }}>
             Expert em eGestor
           </h1>
 
-          {/* Content sections */}
-          <div className="space-y-8 text-gray-600 max-w-3xl mx-auto">
+          <div className="space-y-8 max-w-3xl mx-auto font-opensans" style={{ color: '#52555b' }}>
             <p className="text-lg text-center">
               <strong>No final do curso você responderá um teste.</strong>
             </p>
@@ -53,7 +53,8 @@ const Introducao = () => {
               <div className="text-center">
                 <Button 
                   onClick={() => window.open('https://www.youtube.com/eGestorERP', '_blank')}
-                  className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-md"
+                  className="text-white px-6 py-3 rounded-md font-opensans"
+                  style={{ backgroundColor: '#d61c00' }}
                 >
                   Canal eGestor Youtube
                 </Button>
@@ -66,11 +67,11 @@ const Introducao = () => {
           </div>
         </div>
 
-        {/* Navigation */}
         <div className="flex justify-end mt-8">
           <Button
             onClick={goToNext}
-            className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white"
+            className="flex items-center space-x-2 text-white font-opensans"
+            style={{ backgroundColor: '#d61c00' }}
           >
             <span>PRÓXIMO</span>
             <ArrowRight className="w-4 h-4" />

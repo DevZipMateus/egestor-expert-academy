@@ -5,62 +5,23 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
-
-const cursoData = {
-  1: {
-    titulo: "Expert em eGestor",
-    conteudo: (
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold text-gray-900">
-          Expert em eGestor
-        </h2>
-        <div className="bg-white rounded-lg p-6 shadow-sm border">
-          <p className="text-lg text-gray-700 mb-4">
-            Fazendo esse pequeno curso você terá condições de administrar sua empresa com excelência usando o software eGestor.
-          </p>
-        </div>
-      </div>
-    ),
-  },
-  2: {
-    titulo: "Gestão Financeira",
-    conteudo: (
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold text-gray-900">
-          Gestão Financeira Eficiente
-        </h2>
-        <div className="bg-white rounded-lg p-6 shadow-sm border">
-          <p className="text-lg text-gray-700 mb-4">
-            Controle financeiro completo com o eGestor:
-          </p>
-          <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-              <span className="text-gray-700">Contas a pagar e receber</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-              <span className="text-gray-700">Relatórios financeiros</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-              <span className="text-gray-700">Fluxo de caixa</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    ),
-  },
-};
+import { courseSlides, getTotalSlides, getSlideById } from "@/data/courseData";
+import VideoSlide from "@/components/VideoSlide";
+import ExerciseSlide from "@/components/ExerciseSlide";
+import AttentionSlide from "@/components/AttentionSlide";
+import ExamSlide from "@/components/ExamSlide";
+import { toast } from "sonner";
 
 const Curso = () => {
   const { slide } = useParams();
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
+  const [examScore, setExamScore] = useState<number | null>(null);
+  const [examPassed, setExamPassed] = useState<boolean>(false);
   const currentSlide = parseInt(slide || '1');
-  const totalSlides = Object.keys(cursoData).length;
+  const totalSlides = getTotalSlides();
   
-  const currentContent = cursoData[currentSlide as keyof typeof cursoData];
+  const currentContent = getSlideById(currentSlide);
 
   useEffect(() => {
     checkAuth();
@@ -87,7 +48,6 @@ const Curso = () => {
     if (!user) return;
 
     try {
-      // Buscar progresso atual
       const { data: currentProgress } = await supabase
         .from('progresso_usuario')
         .select('aulas_assistidas')
@@ -96,14 +56,12 @@ const Curso = () => {
 
       const aulasAssistidas = currentProgress?.aulas_assistidas || [];
       
-      // Adicionar aula atual se não estiver na lista
       if (!aulasAssistidas.includes(aulaAtual)) {
         aulasAssistidas.push(aulaAtual);
       }
 
       const progressoPercentual = (aulasAssistidas.length / totalSlides) * 100;
 
-      // Atualizar progresso
       const { error } = await supabase
         .from('progresso_usuario')
         .update({
@@ -134,7 +92,12 @@ const Curso = () => {
     if (currentSlide < totalSlides) {
       navigate(`/curso/${currentSlide + 1}`);
     } else {
-      navigate('/expert');
+      // Curso finalizado
+      if (examPassed) {
+        navigate('/expert');
+      } else {
+        toast.error("Você precisa ser aprovado no exame para continuar.");
+      }
     }
   };
 
@@ -143,44 +106,142 @@ const Curso = () => {
     navigate('/');
   };
 
+  const handleExerciseAnswer = (correct: boolean) => {
+    if (correct) {
+      toast.success("Resposta correta! 🎉");
+    } else {
+      toast.error("Resposta incorreta. Revise o conteúdo.");
+    }
+  };
+
+  const handleExamComplete = (score: number, passed: boolean) => {
+    setExamScore(score);
+    setExamPassed(passed);
+    
+    if (passed) {
+      toast.success(`Parabéns! Você foi aprovado com ${score}%! 🎉`);
+    } else {
+      toast.error(`Você obteve ${score}%. É necessário 80% para aprovação.`);
+    }
+  };
+
+  const renderSlideContent = () => {
+    if (!currentContent) return null;
+
+    switch (currentContent.type) {
+      case 'content':
+        if (currentContent.videoUrl) {
+          return (
+            <VideoSlide 
+              title={currentContent.title}
+              videoUrl={currentContent.videoUrl}
+            />
+          );
+        } else {
+          return (
+            <div className="space-y-6">
+              <h2 className="text-3xl font-bold text-[#52555b] font-roboto text-center">
+                {currentContent.title}
+              </h2>
+              <div className="bg-white rounded-lg p-8 shadow-sm border text-center">
+                <p className="text-lg text-[#52555b] font-opensans leading-relaxed">
+                  {currentContent.content}
+                </p>
+              </div>
+            </div>
+          );
+        }
+      
+      case 'exercise':
+        return (
+          <ExerciseSlide
+            title={currentContent.title}
+            question={currentContent.question!}
+            options={currentContent.options!}
+            onAnswer={handleExerciseAnswer}
+          />
+        );
+      
+      case 'attention':
+        return (
+          <AttentionSlide
+            title={currentContent.title}
+            content={currentContent.content!}
+          />
+        );
+      
+      case 'exam':
+        return (
+          <ExamSlide
+            title={currentContent.title}
+            questions={currentContent.examQuestions!}
+            onExamComplete={handleExamComplete}
+          />
+        );
+      
+      case 'final':
+        return (
+          <div className="space-y-6">
+            <h2 className="text-3xl font-bold text-[#52555b] font-roboto text-center">
+              {examPassed ? 'Você concluiu o curso!' : 'Infelizmente você não passou'}
+            </h2>
+            <div className="bg-white rounded-lg p-8 shadow-sm border text-center">
+              <p className="text-lg text-[#52555b] font-opensans">
+                {examPassed 
+                  ? 'Parabéns! Você é agora um Expert em eGestor!'
+                  : 'Revise o conteúdo e tente novamente o exame.'
+                }
+              </p>
+            </div>
+          </div>
+        );
+      
+      default:
+        return null;
+    }
+  };
+
   if (!currentContent) {
     navigate('/curso/1');
     return null;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+    <div className="min-h-screen" style={{ backgroundColor: '#f7f7f7' }}>
+      <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet" />
+      
       <header className="bg-white shadow-sm">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">eGestor Expert Academy</h1>
-            <p className="text-sm text-gray-600 mt-1">
+            <h1 className="text-2xl font-bold font-roboto" style={{ color: '#52555b' }}>
+              Expert eGestor
+            </h1>
+            <p className="text-sm font-opensans mt-1" style={{ color: '#52555b' }}>
               Slide {currentSlide} de {totalSlides}
             </p>
           </div>
           <Button 
             onClick={handleLogout}
             variant="outline"
-            className="text-red-600 border-red-600 hover:bg-red-50"
+            className="border-red-600 hover:bg-red-50"
+            style={{ color: '#d61c00', borderColor: '#d61c00' }}
           >
             Sair
           </Button>
         </div>
       </header>
 
-      {/* Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-gray-100 rounded-lg p-8">
-          {currentContent.conteudo}
+        <div className="rounded-lg p-8" style={{ backgroundColor: '#f7f7f7' }}>
+          {renderSlideContent()}
         </div>
 
-        {/* Navigation */}
         <div className="flex justify-between items-center mt-8">
           <Button
             onClick={goToPrevious}
             variant="outline"
             className="flex items-center space-x-2"
+            style={{ color: '#52555b', borderColor: '#52555b' }}
           >
             <ArrowLeft className="w-4 h-4" />
             <span>ANTERIOR</span>
@@ -191,7 +252,7 @@ const Curso = () => {
               <div
                 key={index}
                 className={`w-3 h-3 rounded-full ${
-                  index + 1 === currentSlide ? 'bg-green-600' : 'bg-gray-300'
+                  index + 1 === currentSlide ? 'bg-[#d61c00]' : 'bg-gray-300'
                 }`}
               />
             ))}
@@ -199,7 +260,9 @@ const Curso = () => {
 
           <Button
             onClick={goToNext}
-            className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white"
+            className="flex items-center space-x-2 text-white"
+            style={{ backgroundColor: '#d61c00' }}
+            disabled={currentSlide === 47 && !examPassed}
           >
             <span>{currentSlide === totalSlides ? 'FINALIZAR' : 'PRÓXIMO'}</span>
             <ArrowRight className="w-4 h-4" />

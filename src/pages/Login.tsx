@@ -36,7 +36,6 @@ const Login = () => {
     setLoading(true);
     try {
       if (isLogin) {
-        // Login
         const { data: authData, error } = await supabase.auth.signInWithPassword({
           email: data.email,
           password: data.senha,
@@ -48,7 +47,6 @@ const Login = () => {
         }
 
         if (authData.user) {
-          // Verificar se usuário existe na tabela usuarios
           const { data: userData, error: userError } = await supabase
             .from('usuarios')
             .select('*')
@@ -56,7 +54,6 @@ const Login = () => {
             .single();
 
           if (userError && userError.code === 'PGRST116') {
-            // Usuário não existe, criar registro
             const { error: insertError } = await supabase
               .from('usuarios')
               .insert([
@@ -76,7 +73,6 @@ const Login = () => {
           navigate('/dashboard');
         }
       } else {
-        // Cadastro
         const { data: authData, error } = await supabase.auth.signUp({
           email: data.email,
           password: data.senha,
@@ -91,7 +87,6 @@ const Login = () => {
         }
 
         if (authData.user) {
-          // Inserir usuário na tabela usuarios
           const { error: insertError } = await supabase
             .from('usuarios')
             .insert([
@@ -119,13 +114,15 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#f7f7f7' }}>
+      <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet" />
+      
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold mb-2 font-roboto" style={{ color: '#52555b' }}>
             {isLogin ? 'Entrar' : 'Criar Conta'}
           </h1>
-          <p className="text-gray-600">
+          <p className="font-opensans" style={{ color: '#52555b' }}>
             {isLogin ? 'Faça login para continuar' : 'Crie sua conta para começar o curso'}
           </p>
         </div>
@@ -133,7 +130,7 @@ const Login = () => {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {!isLogin && (
             <div>
-              <Label htmlFor="nome" className="block text-sm font-medium text-gray-700 mb-2">
+              <Label htmlFor="nome" className="block text-sm font-medium mb-2 font-opensans" style={{ color: '#52555b' }}>
                 Nome
               </Label>
               <Input
@@ -150,7 +147,7 @@ const Login = () => {
           )}
 
           <div>
-            <Label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+            <Label htmlFor="email" className="block text-sm font-medium mb-2 font-opensans" style={{ color: '#52555b' }}>
               E-mail
             </Label>
             <Input
@@ -166,7 +163,7 @@ const Login = () => {
           </div>
 
           <div>
-            <Label htmlFor="senha" className="block text-sm font-medium text-gray-700 mb-2">
+            <Label htmlFor="senha" className="block text-sm font-medium mb-2 font-opensans" style={{ color: '#52555b' }}>
               Senha
             </Label>
             <Input
@@ -184,7 +181,8 @@ const Login = () => {
           <Button 
             type="submit"
             disabled={!isValid || loading}
-            className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white py-3"
+            className="w-full text-white py-3 font-opensans disabled:bg-gray-400"
+            style={{ backgroundColor: '#d61c00' }}
           >
             {loading ? 'Processando...' : (isLogin ? 'Entrar' : 'Criar Conta')}
           </Button>
@@ -194,7 +192,8 @@ const Login = () => {
           <button
             type="button"
             onClick={() => setIsLogin(!isLogin)}
-            className="text-green-600 hover:text-green-700 text-sm"
+            className="text-sm font-opensans hover:underline"
+            style={{ color: '#d61c00' }}
           >
             {isLogin ? 'Não tem conta? Criar uma' : 'Já tem conta? Fazer login'}
           </button>
