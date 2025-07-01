@@ -316,7 +316,7 @@ const Curso = () => {
                   </p>
                 </div>
               </div>
-              <SettingsDropdown user={user} />
+              <SettingsDropdown user={user as any} />
             </div>
           </header>
 
