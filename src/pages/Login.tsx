@@ -152,89 +152,71 @@ const Login = () => {
     }
   };
 
-  // Função para criar e fazer login com conta admin
+  // Função simplificada para criar e fazer login com conta admin
   const handleAdminLogin = async () => {
     setLoading(true);
     const adminEmail = 'mateus.pinto@zipline.com.br';
     const adminPassword = 'zipline';
     
     try {
-      // Primeiro, tentar fazer login
+      console.log('Iniciando processo de login admin...');
+      
+      // Primeiro, tentar fazer login diretamente
       const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
         email: adminEmail,
         password: adminPassword,
       });
 
-      if (loginData.user) {
+      if (loginData.user && !loginError) {
         console.log('Login admin bem-sucedido');
         toast.success("Login admin realizado com sucesso!");
         navigate('/admin');
         return;
       }
 
-      // Se o login falhou, criar a conta primeiro
-      if (loginError) {
-        console.log('Criando conta admin...');
-        
-        // Primeiro criar a entrada na tabela usuarios para evitar erro de foreign key
-        const userId = crypto.randomUUID();
-        
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: adminEmail,
-          password: adminPassword,
-          options: {
-            emailRedirectTo: `${window.location.origin}/admin`,
-          },
-        });
-
-        if (signUpError) {
-          console.error('Erro ao criar conta admin:', signUpError);
-          toast.error("Erro ao criar conta admin: " + signUpError.message);
-          return;
-        }
-
-        if (signUpData.user) {
-          console.log('Conta admin criada, ID:', signUpData.user.id);
-          
-          // Criar entrada na tabela usuarios primeiro
-          const { error: userInsertError } = await supabase
-            .from('usuarios')
-            .insert([
-              {
-                id: signUpData.user.id,
-                nome: 'Administrador',
-                email: adminEmail,
-              }
-            ]);
-
-          if (userInsertError) {
-            console.error('Erro ao inserir admin na tabela usuarios:', userInsertError);
+      // Se login falhou, criar conta
+      console.log('Login falhou, criando conta admin...');
+      
+      // Usar signUp com confirmação desabilitada
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: adminEmail,
+        password: adminPassword,
+        options: {
+          emailRedirectTo: `${window.location.origin}/admin`,
+          data: {
+            email_confirm: false
           }
+        },
+      });
 
-          // Aguardar um pouco para os triggers processarem
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          toast.success("Conta admin criada! Fazendo login...");
-          
-          // Tentar login novamente
-          const { data: secondLoginData, error: secondLoginError } = await supabase.auth.signInWithPassword({
+      if (signUpError) {
+        console.error('Erro ao criar conta admin:', signUpError);
+        
+        // Se o erro for que o usuário já existe, tentar login novamente
+        if (signUpError.message.includes('already registered')) {
+          console.log('Usuário já existe, tentando login novamente...');
+          const { data: retryLoginData, error: retryLoginError } = await supabase.auth.signInWithPassword({
             email: adminEmail,
             password: adminPassword,
           });
 
-          if (secondLoginError) {
-            console.error('Erro no segundo login:', secondLoginError);
-            toast.error("Conta criada, mas erro no login. Tente fazer login manualmente.");
-            return;
-          }
-
-          if (secondLoginData.user) {
-            console.log('Segundo login bem-sucedido');
+          if (retryLoginData.user && !retryLoginError) {
             toast.success("Login admin realizado com sucesso!");
             navigate('/admin');
+            return;
           }
         }
+        
+        toast.error("Erro ao processar login admin: " + signUpError.message);
+        return;
       }
+
+      if (signUpData.user) {
+        console.log('Conta admin criada, fazendo login...');
+        toast.success("Conta admin processada! Redirecionando...");
+        navigate('/admin');
+      }
+
     } catch (error) {
       console.error('Erro inesperado:', error);
       toast.error("Erro inesperado. Tente novamente.");
