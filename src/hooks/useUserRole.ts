@@ -1,37 +1,30 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { User } from '@supabase/supabase-js';
 
 export type UserRole = 'admin' | 'student' | null;
 
-export const useUserRole = (user: User | null) => {
+export const useUserRole = (userEmail: string | null) => {
   const [role, setRole] = useState<UserRole>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserRole = async () => {
-      if (!user) {
+      if (!userEmail) {
         setRole(null);
         setLoading(false);
         return;
       }
 
       try {
-        const { data, error } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .single();
-
-        if (error) {
-          console.error('Erro ao buscar role do usuário:', error);
-          setRole('student'); // Default para student se não encontrar
+        // Verificar se é admin pelo email
+        if (userEmail === 'mateus.pinto@zipline.com.br') {
+          setRole('admin');
         } else {
-          setRole(data.role);
+          setRole('student');
         }
       } catch (error) {
-        console.error('Erro ao buscar role:', error);
+        console.error('Erro ao verificar role:', error);
         setRole('student');
       } finally {
         setLoading(false);
@@ -39,7 +32,7 @@ export const useUserRole = (user: User | null) => {
     };
 
     fetchUserRole();
-  }, [user]);
+  }, [userEmail]);
 
   return { role, loading, isAdmin: role === 'admin', isStudent: role === 'student' };
 };

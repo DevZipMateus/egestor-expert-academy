@@ -1,275 +1,138 @@
 
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
-import { User } from "@supabase/supabase-js";
-import { useUserRole } from "@/hooks/useUserRole";
-import { Play, RotateCcw, LogOut } from "lucide-react";
-import { toast } from "sonner";
-
-interface ProgressoUsuario {
-  ultima_aula: number;
-  aulas_assistidas: number[];
-  progresso_percentual: number;
-}
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { BookOpen, Trophy, Clock, User, LogOut } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
-  const [progresso, setProgresso] = useState<ProgressoUsuario | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [authChecked, setAuthChecked] = useState(false);
-  const { role, loading: roleLoading, isAdmin } = useUserRole(user);
+  const { user, logout } = useAuth();
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    checkAuth();
+    // Simular progresso do curso
+    setProgress(Math.floor(Math.random() * 100));
   }, []);
 
-  // Só redireciona após ter verificado tanto auth quanto role, e apenas uma vez
-  useEffect(() => {
-    if (authChecked && !roleLoading) {
-      if (!user) {
-        navigate('/login');
-        return;
-      }
-      
-      if (isAdmin && role === 'admin') {
-        navigate('/admin');
-      }
-    }
-  }, [authChecked, roleLoading, user, isAdmin, role, navigate]);
-
-  const checkAuth = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        setAuthChecked(true);
-        setLoading(false);
-        return;
-      }
-
-      setUser(session.user);
-      await buscarProgresso(session.user.id);
-    } catch (error) {
-      console.error('Erro ao verificar autenticação:', error);
-    } finally {
-      setAuthChecked(true);
-      setLoading(false);
-    }
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
-  const buscarProgresso = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('progresso_usuario')
-        .select('ultima_aula, aulas_assistidas, progresso_percentual')
-        .eq('usuario_id', userId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Erro ao buscar progresso:', error);
-        return;
-      }
-
-      if (data) {
-        setProgresso(data);
-      }
-    } catch (error) {
-      console.error('Erro ao buscar progresso:', error);
-    }
+  const handleContinueCourse = () => {
+    navigate('/curso/1');
   };
-
-  const iniciarDoComeco = async () => {
-    if (!user) return;
-
-    try {
-      const { error } = await supabase
-        .from('progresso_usuario')
-        .update({
-          ultima_aula: 1,
-          aulas_assistidas: [],
-          progresso_percentual: 0,
-          data_atualizacao: new Date().toISOString()
-        })
-        .eq('usuario_id', user.id);
-
-      if (error) {
-        console.error('Erro ao resetar progresso:', error);
-        toast.error('Erro ao resetar progresso');
-        return;
-      }
-
-      toast.success('Progresso resetado com sucesso!');
-      navigate('/curso/1');
-    } catch (error) {
-      console.error('Erro ao resetar progresso:', error);
-      toast.error('Erro ao resetar progresso');
-    }
-  };
-
-  const continuarDeOndeParou = () => {
-    const ultimaAula = progresso?.ultima_aula || 1;
-    navigate(`/curso/${ultimaAula}`);
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/');
-  };
-
-  // Mostrar loading enquanto verifica auth e role
-  if (loading || roleLoading || !authChecked) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#f7f7f7' }}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#d61c00' }}></div>
-          <p style={{ color: '#52555b' }}>Carregando...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Se for admin, não renderiza nada (será redirecionado)
-  if (!user || isAdmin) {
-    return null;
-  }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f7f7f7' }}>
-      <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet" />
-      
-      <header className="bg-white shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold font-roboto" style={{ color: '#52555b' }}>
-              Expert eGestor Academy
-            </h1>
-            <p className="text-sm font-opensans mt-1" style={{ color: '#52555b' }}>
-              Bem-vindo, {user?.email}
-            </p>
-          </div>
-          <Button 
-            onClick={handleLogout}
-            variant="outline"
-            className="flex items-center space-x-2 border-red-600 hover:bg-red-50"
-            style={{ color: '#d61c00', borderColor: '#d61c00' }}
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Sair</span>
-          </Button>
-        </div>
-      </header>
-
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg p-8 shadow-sm">
-          <h2 className="text-3xl font-bold text-center mb-8 font-roboto" style={{ color: '#52555b' }}>
-            Painel do Aluno
-          </h2>
-
-          {progresso && (
-            <div className="mb-8 p-6 bg-gray-50 rounded-lg">
-              <h3 className="text-lg font-semibold mb-4 font-opensans" style={{ color: '#52555b' }}>
-                Seu Progresso
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                <div>
-                  <p className="text-2xl font-bold font-roboto" style={{ color: '#d61c00' }}>
-                    {progresso.ultima_aula}
-                  </p>
-                  <p className="text-sm font-opensans" style={{ color: '#52555b' }}>
-                    Última Aula
-                  </p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold font-roboto" style={{ color: '#d61c00' }}>
-                    {progresso.aulas_assistidas?.length || 0}
-                  </p>
-                  <p className="text-sm font-opensans" style={{ color: '#52555b' }}>
-                    Aulas Assistidas
-                  </p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold font-roboto" style={{ color: '#d61c00' }}>
-                    {Math.round(progresso.progresso_percentual || 0)}%
-                  </p>
-                  <p className="text-sm font-opensans" style={{ color: '#52555b' }}>
-                    Progresso
-                  </p>
-                </div>
+    <ProtectedRoute>
+      <div className="min-h-screen bg-gray-50">
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet" />
+        
+        {/* Header */}
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center py-4">
+              <div className="flex items-center gap-3">
+                <BookOpen className="w-8 h-8" style={{ color: '#d61c00' }} />
+                <h1 className="text-2xl font-bold font-roboto" style={{ color: '#52555b' }}>
+                  eGestor Expert Academy
+                </h1>
               </div>
-              
-              <div className="mt-4">
-                <div className="bg-gray-200 rounded-full h-3">
-                  <div 
-                    className="h-3 rounded-full transition-all duration-300"
-                    style={{ 
-                      width: `${progresso.progresso_percentual || 0}%`,
-                      backgroundColor: '#d61c00'
-                    }}
-                  />
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <User className="w-5 h-5 text-gray-600" />
+                  <span className="font-opensans text-gray-700">{user?.nome}</span>
                 </div>
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg border-2 border-green-200">
-              <div className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-green-500 rounded-full mb-4">
-                  <RotateCcw className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-xl font-bold mb-2 font-roboto" style={{ color: '#52555b' }}>
-                  Começar do Início
-                </h3>
-                <p className="text-sm mb-4 font-opensans" style={{ color: '#52555b' }}>
-                  Reinicie seu progresso e comece o curso desde a primeira aula.
-                </p>
-                <Button 
-                  onClick={iniciarDoComeco}
-                  className="w-full text-white font-opensans"
-                  style={{ backgroundColor: '#d61c00' }}
+                <Button
+                  variant="outline"
+                  onClick={handleLogout}
+                  className="flex items-center gap-2"
                 >
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  Começar do Início
-                </Button>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg border-2 border-blue-200">
-              <div className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-500 rounded-full mb-4">
-                  <Play className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-xl font-bold mb-2 font-roboto" style={{ color: '#52555b' }}>
-                  Continuar de Onde Parou
-                </h3>
-                <p className="text-sm mb-4 font-opensans" style={{ color: '#52555b' }}>
-                  Continue seus estudos a partir da {progresso ? `aula ${progresso.ultima_aula}` : 'primeira aula'}.
-                </p>
-                <Button 
-                  onClick={continuarDeOndeParou}
-                  className="w-full text-white font-opensans"
-                  style={{ backgroundColor: '#d61c00' }}
-                >
-                  <Play className="w-4 h-4 mr-2" />
-                  Continuar Curso
+                  <LogOut className="w-4 h-4" />
+                  Sair
                 </Button>
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="mt-8 text-center">
-            <p className="text-sm font-opensans" style={{ color: '#52555b' }}>
-              O curso possui <strong>47 slides</strong> com conteúdo, exercícios e um exame final.
-              <br />
-              Você precisa de <strong>80% de aprovação</strong> no exame para obter seu certificado.
-            </p>
+        {/* Main Content */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Welcome Card */}
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="font-roboto" style={{ color: '#52555b' }}>
+                    Bem-vindo de volta, {user?.nome}!
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600 font-opensans mb-6">
+                    Continue sua jornada de aprendizado no eGestor Expert Academy
+                  </p>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-opensans text-gray-600">Progresso do Curso</span>
+                        <span className="text-sm font-opensans font-semibold">{progress}%</span>
+                      </div>
+                      <Progress value={progress} className="h-2" />
+                    </div>
+                    <Button 
+                      onClick={handleContinueCourse}
+                      className="w-full text-white font-opensans"
+                      style={{ backgroundColor: '#d61c00' }}
+                    >
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      Continuar Curso
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Stats Cards */}
+            <div className="space-y-6">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg font-roboto" style={{ color: '#52555b' }}>
+                    Estatísticas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-5 h-5 text-blue-500" />
+                      <span className="font-opensans text-sm">Aulas Assistidas</span>
+                    </div>
+                    <span className="font-semibold">{Math.floor(progress * 0.47)}/47</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Trophy className="w-5 h-5 text-yellow-500" />
+                      <span className="font-opensans text-sm">Exercícios</span>
+                    </div>
+                    <span className="font-semibold">{Math.floor(progress * 0.1)}/10</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-5 h-5 text-green-500" />
+                      <span className="font-opensans text-sm">Tempo Total</span>
+                    </div>
+                    <span className="font-semibold">{Math.floor(progress * 0.8)}h</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 };
 
