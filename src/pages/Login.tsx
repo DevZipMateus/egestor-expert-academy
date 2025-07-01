@@ -115,7 +115,7 @@ const Login = () => {
     }
   };
 
-  // Função simplificada para login admin
+  // Função melhorada para login admin
   const handleAdminLogin = async () => {
     setLoading(true);
     const adminEmail = 'mateus.pinto@zipline.com.br';
@@ -124,7 +124,7 @@ const Login = () => {
     try {
       console.log('Iniciando processo de login admin...');
       
-      // Primeiro, tentar fazer login diretamente
+      // Tentar fazer login diretamente
       const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
         email: adminEmail,
         password: adminPassword,
@@ -137,50 +137,54 @@ const Login = () => {
         return;
       }
 
-      // Se login falhou, criar conta
-      console.log('Login falhou, criando conta admin...');
-      
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: adminEmail,
-        password: adminPassword,
-        options: {
-          emailRedirectTo: `${window.location.origin}/admin`,
-          data: {
-            nome: 'Administrador', // Nome para o trigger usar
-          }
-        },
-      });
-
-      if (signUpError) {
-        console.error('Erro ao criar conta admin:', signUpError);
-        
-        // Se o erro for que o usuário já existe, tentar login novamente
-        if (signUpError.message.includes('already registered')) {
-          console.log('Usuário já existe, tentando login novamente...');
-          const { data: retryLoginData, error: retryLoginError } = await supabase.auth.signInWithPassword({
-            email: adminEmail,
-            password: adminPassword,
-          });
-
-          if (retryLoginData.user && !retryLoginError) {
-            toast.success("Login admin realizado com sucesso!");
-            navigate('/admin');
-            return;
-          }
-        }
-        
-        toast.error("Erro ao processar login admin: " + signUpError.message);
+      // Se login falhou por email não confirmado, informar o usuário
+      if (loginError?.message?.includes('Email not confirmed')) {
+        console.log('Email não confirmado para admin');
+        toast.error("Email do admin não está confirmado. Por favor, verifique seu email ou desabilite a confirmação por email nas configurações do Supabase.");
         return;
       }
 
-      if (signUpData.user) {
-        console.log('Conta admin criada com sucesso');
-        toast.success("Conta admin criada! Redirecionando...");
-        navigate('/admin');
+      // Se login falhou por credenciais inválidas, tentar criar conta
+      if (loginError?.message?.includes('Invalid login credentials')) {
+        console.log('Credenciais inválidas, tentando criar conta admin...');
+        
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: adminEmail,
+          password: adminPassword,
+          options: {
+            emailRedirectTo: `${window.location.origin}/admin`,
+            data: {
+              nome: 'Administrador',
+            }
+          },
+        });
+
+        if (signUpError) {
+          console.error('Erro ao criar conta admin:', signUpError);
+          
+          if (signUpError.message.includes('already registered')) {
+            toast.error("Conta admin já existe mas há um problema com as credenciais. Verifique as configurações do Supabase.");
+          } else if (signUpError.message.includes('rate_limit')) {
+            toast.error("Muitas tentativas de cadastro. Aguarde alguns minutos antes de tentar novamente.");
+          } else {
+            toast.error("Erro ao processar login admin: " + signUpError.message);
+          }
+          return;
+        }
+
+        if (signUpData.user) {
+          console.log('Conta admin criada com sucesso');
+          toast.success("Conta admin criada! Verifique seu email para confirmar a conta.");
+          return;
+        }
       }
 
+      // Para outros erros de login
+      console.error('Erro no login admin:', loginError);
+      toast.error("Erro ao fazer login admin: " + (loginError?.message || 'Erro desconhecido'));
+
     } catch (error) {
-      console.error('Erro inesperado:', error);
+      console.error('Erro inesperado no login admin:', error);
       toast.error("Erro inesperado. Tente novamente.");
     } finally {
       setLoading(false);
