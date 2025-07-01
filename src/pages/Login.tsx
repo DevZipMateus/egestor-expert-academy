@@ -27,6 +27,7 @@ const Login = () => {
     register,
     handleSubmit,
     formState: { errors, isValid },
+    setValue,
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     mode: "onChange",
@@ -151,21 +152,83 @@ const Login = () => {
     }
   };
 
-  // Função para pré-definir login admin
-  const handleAdminLogin = () => {
-    const form = document.querySelector('form') as HTMLFormElement;
-    const emailInput = form?.querySelector('#email') as HTMLInputElement;
-    const senhaInput = form?.querySelector('#senha') as HTMLInputElement;
+  // Função para criar e fazer login com conta admin
+  const handleAdminLogin = async () => {
+    setLoading(true);
+    const adminEmail = 'mateus.pinto@zipline.com.br';
+    const adminPassword = 'zipline';
     
-    if (emailInput && senhaInput) {
-      emailInput.value = 'mateus.pinto@zipline.com.br';
-      senhaInput.value = 'zipline';
-      
-      // Trigger form validation
-      emailInput.dispatchEvent(new Event('input', { bubbles: true }));
-      senhaInput.dispatchEvent(new Event('input', { bubbles: true }));
+    try {
+      // Primeiro, tentar fazer login
+      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+        email: adminEmail,
+        password: adminPassword,
+      });
+
+      if (loginData.user) {
+        console.log('Login admin bem-sucedido');
+        toast.success("Login admin realizado com sucesso!");
+        navigate('/admin');
+        return;
+      }
+
+      // Se o login falhou, provavelmente a conta não existe - vamos criar
+      if (loginError && loginError.message.includes('Invalid login credentials')) {
+        console.log('Conta admin não existe, criando...');
+        
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: adminEmail,
+          password: adminPassword,
+          options: {
+            emailRedirectTo: `${window.location.origin}/admin`,
+            data: {
+              nome: 'Administrador'
+            }
+          },
+        });
+
+        if (signUpError) {
+          console.error('Erro ao criar conta admin:', signUpError);
+          toast.error("Erro ao criar conta admin: " + signUpError.message);
+          return;
+        }
+
+        if (signUpData.user) {
+          console.log('Conta admin criada com sucesso');
+          toast.success("Conta admin criada! Fazendo login...");
+          
+          // Agora tentar login novamente
+          const { data: secondLoginData, error: secondLoginError } = await supabase.auth.signInWithPassword({
+            email: adminEmail,
+            password: adminPassword,
+          });
+
+          if (secondLoginError) {
+            console.error('Erro no segundo login:', secondLoginError);
+            toast.error("Conta criada, mas erro no login. Tente fazer login manualmente.");
+            return;
+          }
+
+          if (secondLoginData.user) {
+            console.log('Segundo login bem-sucedido');
+            toast.success("Login admin realizado com sucesso!");
+            navigate('/admin');
+          }
+        }
+      } else {
+        console.error('Erro inesperado no login admin:', loginError);
+        toast.error("Erro no login admin: " + (loginError?.message || 'Erro desconhecido'));
+      }
+    } catch (error) {
+      console.error('Erro inesperado:', error);
+      toast.error("Erro inesperado. Tente novamente.");
+    } finally {
+      setLoading(false);
     }
-    
+
+    // Preencher os campos do formulário
+    setValue('email', adminEmail);
+    setValue('senha', adminPassword);
     setIsLogin(true);
   };
 
@@ -190,8 +253,9 @@ const Login = () => {
             onClick={handleAdminLogin}
             variant="outline"
             className="w-full text-sm"
+            disabled={loading}
           >
-            Login Admin (Teste)
+            {loading ? 'Processando...' : 'Login Admin (Teste)'}
           </Button>
         </div>
 
