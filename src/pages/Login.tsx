@@ -68,30 +68,6 @@ const Login = () => {
 
           console.log('Role do usuário:', roleData, roleError);
 
-          // Verificar/criar entrada na tabela usuarios
-          const { data: userData, error: userError } = await supabase
-            .from('usuarios')
-            .select('*')
-            .eq('id', authData.user.id)
-            .single();
-
-          if (userError && userError.code === 'PGRST116') {
-            // Usuário não existe na tabela usuarios, criar
-            const { error: insertError } = await supabase
-              .from('usuarios')
-              .insert([
-                {
-                  id: authData.user.id,
-                  nome: data.nome || authData.user.email?.split('@')[0] || 'Usuário',
-                  email: data.email,
-                }
-              ]);
-
-            if (insertError) {
-              console.error('Erro ao criar usuário na tabela usuarios:', insertError);
-            }
-          }
-
           toast.success("Login realizado com sucesso!");
           
           // Redirecionar baseado no role
@@ -113,6 +89,9 @@ const Login = () => {
           password: data.senha,
           options: {
             emailRedirectTo: `${window.location.origin}/dashboard`,
+            data: {
+              nome: data.nome, // Passando o nome nos metadados para o trigger usar
+            }
           },
         });
 
@@ -124,22 +103,6 @@ const Login = () => {
 
         if (authData.user) {
           console.log('Cadastro bem-sucedido, usuário:', authData.user);
-
-          // Criar entrada na tabela usuarios
-          const { error: insertError } = await supabase
-            .from('usuarios')
-            .insert([
-              {
-                id: authData.user.id,
-                nome: data.nome,
-                email: data.email,
-              }
-            ]);
-
-          if (insertError) {
-            console.error('Erro ao inserir usuário:', insertError);
-          }
-
           toast.success("Conta criada com sucesso! Verifique seu e-mail.");
           navigate('/dashboard');
         }
@@ -152,7 +115,7 @@ const Login = () => {
     }
   };
 
-  // Função simplificada para criar e fazer login com conta admin
+  // Função simplificada para login admin
   const handleAdminLogin = async () => {
     setLoading(true);
     const adminEmail = 'mateus.pinto@zipline.com.br';
@@ -177,14 +140,13 @@ const Login = () => {
       // Se login falhou, criar conta
       console.log('Login falhou, criando conta admin...');
       
-      // Usar signUp com confirmação desabilitada
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: adminEmail,
         password: adminPassword,
         options: {
           emailRedirectTo: `${window.location.origin}/admin`,
           data: {
-            email_confirm: false
+            nome: 'Administrador', // Nome para o trigger usar
           }
         },
       });
@@ -212,8 +174,8 @@ const Login = () => {
       }
 
       if (signUpData.user) {
-        console.log('Conta admin criada, fazendo login...');
-        toast.success("Conta admin processada! Redirecionando...");
+        console.log('Conta admin criada com sucesso');
+        toast.success("Conta admin criada! Redirecionando...");
         navigate('/admin');
       }
 
