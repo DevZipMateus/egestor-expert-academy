@@ -1,16 +1,18 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Settings, User, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import AdminCourses from '@/components/admin/AdminCourses';
 import AdminSlides from '@/components/admin/AdminSlides';
 import AdminQuestions from '@/components/admin/AdminQuestions';
 
 const Admin = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState('slides');
+  const [activeTab, setActiveTab] = useState('courses');
 
   const handleLogout = () => {
     logout();
@@ -55,20 +57,30 @@ const Admin = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex gap-4 mb-8">
             <Button
+              variant={activeTab === 'courses' ? 'default' : 'outline'}
+              onClick={() => setActiveTab('courses')}
+            >
+              Cursos
+            </Button>
+            <Button
               variant={activeTab === 'slides' ? 'default' : 'outline'}
               onClick={() => setActiveTab('slides')}
             >
-              Slides
+              Slides (Legado)
             </Button>
             <Button
               variant={activeTab === 'questions' ? 'default' : 'outline'}
               onClick={() => setActiveTab('questions')}
             >
-              Perguntas
+              Perguntas (Legado)
             </Button>
           </div>
 
-          {activeTab === 'slides' ? (
+          {activeTab === 'courses' ? (
+            <div>
+              <AdminCourses />
+            </div>
+          ) : activeTab === 'slides' ? (
             <div>
               <AdminSlides />
             </div>

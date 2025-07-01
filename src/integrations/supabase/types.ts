@@ -9,6 +9,77 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      course_modules: {
+        Row: {
+          ativo: boolean
+          course_id: string
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          ordem: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          course_id: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          ordem: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          course_id?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          ordem?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_modules_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          ordem: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          ordem?: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          ordem?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       progresso_usuario: {
         Row: {
           aulas_assistidas: number[] | null
@@ -81,30 +152,50 @@ export type Database = {
       }
       questions: {
         Row: {
+          course_id: string | null
           created_at: string | null
           explicacao: string | null
           id: string
+          module_id: string | null
           pergunta: string
           slide_id: number | null
           updated_at: string | null
         }
         Insert: {
+          course_id?: string | null
           created_at?: string | null
           explicacao?: string | null
           id?: string
+          module_id?: string | null
           pergunta: string
           slide_id?: number | null
           updated_at?: string | null
         }
         Update: {
+          course_id?: string | null
           created_at?: string | null
           explicacao?: string | null
           id?: string
+          module_id?: string | null
           pergunta?: string
           slide_id?: number | null
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "questions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "course_modules"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "questions_slide_id_fkey"
             columns: ["slide_id"]
@@ -118,8 +209,10 @@ export type Database = {
         Row: {
           ativo: boolean | null
           conteudo: string | null
+          course_id: string | null
           created_at: string | null
           id: number
+          module_id: string | null
           ordem: number
           tipo: string
           titulo: string
@@ -129,8 +222,10 @@ export type Database = {
         Insert: {
           ativo?: boolean | null
           conteudo?: string | null
+          course_id?: string | null
           created_at?: string | null
           id?: number
+          module_id?: string | null
           ordem: number
           tipo: string
           titulo: string
@@ -140,15 +235,32 @@ export type Database = {
         Update: {
           ativo?: boolean | null
           conteudo?: string | null
+          course_id?: string | null
           created_at?: string | null
           id?: number
+          module_id?: string | null
           ordem?: number
           tipo?: string
           titulo?: string
           updated_at?: string | null
           video_url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "slides_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "slides_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "course_modules"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
