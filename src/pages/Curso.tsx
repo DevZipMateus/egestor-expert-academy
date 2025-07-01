@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import CourseSidebar from "@/components/CourseSidebar";
 import SettingsDropdown from "@/components/SettingsDropdown";
+import CourseDebugInfo from "@/components/CourseDebugInfo";
 import { useCourseData } from "@/hooks/useCourseData";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -321,6 +322,8 @@ const Curso = () => {
           </header>
 
           <main className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <CourseDebugInfo />
+            
             <div className="rounded-lg p-8" style={{ backgroundColor: '#f7f7f7' }}>
               {renderSlideContent()}
             </div>
