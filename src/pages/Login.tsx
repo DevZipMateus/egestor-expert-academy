@@ -172,18 +172,18 @@ const Login = () => {
         return;
       }
 
-      // Se o login falhou, provavelmente a conta não existe - vamos criar
-      if (loginError && loginError.message.includes('Invalid login credentials')) {
-        console.log('Conta admin não existe, criando...');
+      // Se o login falhou, criar a conta primeiro
+      if (loginError) {
+        console.log('Criando conta admin...');
+        
+        // Primeiro criar a entrada na tabela usuarios para evitar erro de foreign key
+        const userId = crypto.randomUUID();
         
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: adminEmail,
           password: adminPassword,
           options: {
             emailRedirectTo: `${window.location.origin}/admin`,
-            data: {
-              nome: 'Administrador'
-            }
           },
         });
 
@@ -194,10 +194,29 @@ const Login = () => {
         }
 
         if (signUpData.user) {
-          console.log('Conta admin criada com sucesso');
+          console.log('Conta admin criada, ID:', signUpData.user.id);
+          
+          // Criar entrada na tabela usuarios primeiro
+          const { error: userInsertError } = await supabase
+            .from('usuarios')
+            .insert([
+              {
+                id: signUpData.user.id,
+                nome: 'Administrador',
+                email: adminEmail,
+              }
+            ]);
+
+          if (userInsertError) {
+            console.error('Erro ao inserir admin na tabela usuarios:', userInsertError);
+          }
+
+          // Aguardar um pouco para os triggers processarem
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
           toast.success("Conta admin criada! Fazendo login...");
           
-          // Agora tentar login novamente
+          // Tentar login novamente
           const { data: secondLoginData, error: secondLoginError } = await supabase.auth.signInWithPassword({
             email: adminEmail,
             password: adminPassword,
@@ -215,9 +234,6 @@ const Login = () => {
             navigate('/admin');
           }
         }
-      } else {
-        console.error('Erro inesperado no login admin:', loginError);
-        toast.error("Erro no login admin: " + (loginError?.message || 'Erro desconhecido'));
       }
     } catch (error) {
       console.error('Erro inesperado:', error);
