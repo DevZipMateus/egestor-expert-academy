@@ -73,7 +73,6 @@ export const useCourseData = () => {
         console.error('❌ Erro ao carregar slides do Supabase:', slidesError);
         console.log('📦 Usando dados estáticos como fallback');
         setError(slidesError.message);
-        setSlides(courseSlides);
         setUseStaticData(true);
         setLoading(false);
         return;
@@ -85,7 +84,6 @@ export const useCourseData = () => {
       if (!slidesData || slidesData.length === 0) {
         console.log('⚠️ Nenhum slide encontrado no banco de dados');
         console.log('📦 Usando dados estáticos como fallback');
-        setSlides(courseSlides);
         setUseStaticData(true);
         setLoading(false);
         return;
@@ -130,7 +128,6 @@ export const useCourseData = () => {
     } catch (error) {
       console.error('💥 Erro crítico ao carregar dados do curso:', error);
       setError('Erro ao carregar dados do curso');
-      setSlides(courseSlides);
       setUseStaticData(true);
       console.log('📦 Fallback para dados estáticos ativado');
     } finally {
