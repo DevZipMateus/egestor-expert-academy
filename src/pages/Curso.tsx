@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight } from "lucide-react";
@@ -23,6 +22,7 @@ const Curso = () => {
   const [examScore, setExamScore] = useState<number | null>(null);
   const [examPassed, setExamPassed] = useState<boolean>(false);
   const [supabaseUserId, setSupabaseUserId] = useState<string | null>(null);
+  const [canAdvance, setCanAdvance] = useState<boolean>(true);
   const currentSlide = parseInt(slide || '1');
   
   const { 
@@ -43,7 +43,6 @@ const Curso = () => {
       return;
     }
     
-    // Criar ou encontrar usuário no Supabase para tracking de progresso
     createOrFindSupabaseUser();
   }, [isAuthenticated, navigate]);
 
@@ -53,11 +52,19 @@ const Curso = () => {
     }
   }, [supabaseUserId, currentSlide]);
 
+  // Reset navigation control when slide changes
+  useEffect(() => {
+    if (currentContent?.type === 'exercise' || currentContent?.type === 'exam') {
+      setCanAdvance(false);
+    } else {
+      setCanAdvance(true);
+    }
+  }, [currentSlide, currentContent]);
+
   const createOrFindSupabaseUser = async () => {
     if (!user) return;
 
     try {
-      // Primeiro, verificar se o usuário já existe na tabela usuarios
       const { data: existingUser } = await supabase
         .from('usuarios')
         .select('id')
@@ -69,7 +76,6 @@ const Curso = () => {
         return;
       }
 
-      // Se não existir, criar novo usuário
       const { data: newUser, error } = await supabase
         .from('usuarios')
         .insert([{
@@ -87,7 +93,6 @@ const Curso = () => {
       if (newUser) {
         setSupabaseUserId(newUser.id);
         
-        // Criar registro de progresso
         await supabase
           .from('progresso_usuario')
           .insert([{
@@ -144,10 +149,14 @@ const Curso = () => {
   };
 
   const goToNext = () => {
+    if (!canAdvance) {
+      toast.error("Você precisa responder a pergunta antes de continuar.");
+      return;
+    }
+
     if (currentSlide < totalSlides) {
       navigate(`/curso/${currentSlide + 1}`);
     } else {
-      // Curso finalizado
       if (examPassed) {
         navigate('/expert');
       } else {
@@ -162,11 +171,13 @@ const Curso = () => {
     } else {
       toast.error("Resposta incorreta. Revise o conteúdo.");
     }
+    setCanAdvance(true);
   };
 
   const handleExamComplete = (score: number, passed: boolean) => {
     setExamScore(score);
     setExamPassed(passed);
+    setCanAdvance(true);
     
     if (passed) {
       toast.success(`Parabéns! Você foi aprovado com ${score}%! 🎉`);
@@ -178,24 +189,23 @@ const Curso = () => {
   const renderSlideContent = () => {
     if (loading) {
       return (
-        <div className="flex items-center justify-center py-20">
+        <div className="flex flex-col items-center justify-center py-12 md:py-20">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 ml-4">Carregando curso...</p>
+          <p className="text-gray-600 text-sm md:text-base">Carregando curso...</p>
         </div>
       );
     }
 
     if (error) {
       return (
-        <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
-          <p className="text-red-800">Erro ao carregar o curso. Tentando usar dados locais...</p>
+        <div className="bg-red-50 border border-red-200 p-3 md:p-4 rounded-lg">
+          <p className="text-red-800 text-sm md:text-base">Erro ao carregar o curso. Tentando usar dados locais...</p>
         </div>
       );
     }
 
     if (!currentContent) return null;
 
-    // Para slides de exercício, buscar pergunta específica
     if (currentContent.type === 'exercise') {
       const questionData = getQuestionBySlideId(currentSlide);
       if (questionData) {
@@ -222,12 +232,12 @@ const Curso = () => {
           );
         } else {
           return (
-            <div className="space-y-6">
-              <h2 className="text-3xl font-bold text-[#52555b] font-roboto text-center">
+            <div className="space-y-4 md:space-y-6">
+              <h2 className="text-2xl md:text-3xl font-bold text-[#52555b] font-roboto text-center px-4">
                 {currentContent.title}
               </h2>
-              <div className="bg-white rounded-lg p-8 shadow-sm border text-center">
-                <p className="text-lg text-[#52555b] font-opensans leading-relaxed">
+              <div className="bg-white rounded-lg p-4 md:p-8 shadow-sm border text-center">
+                <p className="text-base md:text-lg text-[#52555b] font-opensans leading-relaxed">
                   {currentContent.content}
                 </p>
               </div>
@@ -254,12 +264,12 @@ const Curso = () => {
       
       case 'final':
         return (
-          <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-[#52555b] font-roboto text-center">
+          <div className="space-y-4 md:space-y-6">
+            <h2 className="text-2xl md:text-3xl font-bold text-[#52555b] font-roboto text-center px-4">
               {examPassed ? 'Você concluiu o curso!' : 'Infelizmente você não passou'}
             </h2>
-            <div className="bg-white rounded-lg p-8 shadow-sm border text-center">
-              <p className="text-lg text-[#52555b] font-opensans">
+            <div className="bg-white rounded-lg p-4 md:p-8 shadow-sm border text-center">
+              <p className="text-base md:text-lg text-[#52555b] font-opensans">
                 {examPassed 
                   ? 'Parabéns! Você é agora um Expert em eGestor!'
                   : 'Revise o conteúdo e tente novamente o exame.'
@@ -279,13 +289,12 @@ const Curso = () => {
     return null;
   }
 
-  // Mostrar loading se ainda não temos usuário autenticado
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Verificando autenticação...</p>
+          <p className="text-gray-600 text-sm md:text-base">Verificando autenticação...</p>
         </div>
       </div>
     );
@@ -293,25 +302,25 @@ const Curso = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full" style={{ backgroundColor: '#f7f7f7' }}>
+      <div className="min-h-screen flex flex-col md:flex-row w-full" style={{ backgroundColor: '#f7f7f7' }}>
         <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet" />
         
         <CourseSidebar />
         
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           <header className="bg-[#d61c00] shadow-sm">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger className="text-white hover:bg-white/20" />
-                <div>
-                  <h1 className="text-2xl font-bold font-roboto text-white">
+            <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 md:py-4 flex justify-between items-center">
+              <div className="flex items-center gap-2 md:gap-4 min-w-0">
+                <SidebarTrigger className="text-white hover:bg-white/20 flex-shrink-0" />
+                <div className="min-w-0">
+                  <h1 className="text-lg md:text-2xl font-bold font-roboto text-white truncate">
                     Expert eGestor
                   </h1>
-                  <p className="text-sm font-opensans mt-1 text-white/90">
+                  <p className="text-xs md:text-sm font-opensans mt-1 text-white/90">
                     Slide {currentSlide} de {totalSlides}
                     {useStaticData && (
                       <span className="ml-2 text-xs bg-yellow-500 text-black px-2 py-1 rounded">
-                        Modo Offline
+                        Offline
                       </span>
                     )}
                   </p>
@@ -321,42 +330,50 @@ const Curso = () => {
             </div>
           </header>
 
-          <main className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <main className="flex-1 max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-4 md:py-8 w-full">
             <CourseDebugInfo />
             
-            <div className="rounded-lg p-8" style={{ backgroundColor: '#f7f7f7' }}>
+            <div className="rounded-lg p-3 md:p-8" style={{ backgroundColor: '#f7f7f7' }}>
               {renderSlideContent()}
             </div>
 
-            <div className="flex justify-between items-center mt-8">
+            <div className="flex flex-col sm:flex-row justify-between items-center mt-6 md:mt-8 gap-4">
               <Button
                 onClick={goToPrevious}
                 variant="outline"
-                className="flex items-center space-x-2"
+                className="flex items-center space-x-2 w-full sm:w-auto order-2 sm:order-1"
                 style={{ color: '#52555b', borderColor: '#52555b' }}
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span>ANTERIOR</span>
+                <span className="text-sm md:text-base">ANTERIOR</span>
               </Button>
 
-              <div className="flex space-x-2">
-                {Array.from({ length: totalSlides }, (_, index) => (
-                  <div
-                    key={index}
-                    className={`w-3 h-3 rounded-full ${
-                      index + 1 === currentSlide ? 'bg-[#d61c00]' : 'bg-gray-300'
-                    }`}
-                  />
-                ))}
+              <div className="flex space-x-1 md:space-x-2 order-1 sm:order-2 overflow-x-auto pb-2 sm:pb-0">
+                {Array.from({ length: Math.min(totalSlides, 10) }, (_, index) => {
+                  const slideNumber = Math.floor((currentSlide - 1) / 10) * 10 + index + 1;
+                  if (slideNumber > totalSlides) return null;
+                  return (
+                    <div
+                      key={slideNumber}
+                      className={`w-2 h-2 md:w-3 md:h-3 rounded-full flex-shrink-0 ${
+                        slideNumber === currentSlide ? 'bg-[#d61c00]' : 'bg-gray-300'
+                      }`}
+                    />
+                  );
+                })}
               </div>
 
               <Button
                 onClick={goToNext}
-                className="flex items-center space-x-2 text-white"
+                className={`flex items-center space-x-2 text-white w-full sm:w-auto order-3 ${
+                  !canAdvance ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
                 style={{ backgroundColor: '#d61c00' }}
                 disabled={currentSlide === totalSlides && !examPassed}
               >
-                <span>{currentSlide === totalSlides ? 'FINALIZAR' : 'PRÓXIMO'}</span>
+                <span className="text-sm md:text-base">
+                  {currentSlide === totalSlides ? 'FINALIZAR' : 'PRÓXIMO'}
+                </span>
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </div>

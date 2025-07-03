@@ -43,10 +43,10 @@ const CourseSidebar = () => {
 
   if (loading) {
     return (
-      <Sidebar className="w-80 bg-white border-r border-gray-200">
+      <Sidebar className="w-64 md:w-80 bg-white border-r border-gray-200">
         <SidebarContent>
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="text-lg font-bold text-[#52555b] font-roboto">
+          <div className="p-3 md:p-4 border-b border-gray-200">
+            <h2 className="text-base md:text-lg font-bold text-[#52555b] font-roboto">
               Carregando...
             </h2>
           </div>
@@ -55,7 +55,6 @@ const CourseSidebar = () => {
     );
   }
 
-  // Organizar slides por ordem sequencial em grupos lógicos
   const organizeSlidesByRange = (slidesList: typeof slides) => {
     return [
       {
@@ -88,13 +87,13 @@ const CourseSidebar = () => {
   const slideGroups = organizeSlidesByRange(slides);
 
   return (
-    <Sidebar className="w-80 bg-white border-r border-gray-200">
+    <Sidebar className="w-64 md:w-80 bg-white border-r border-gray-200">
       <SidebarContent>
-        <div className="p-4 border-b border-gray-200">
-          <h2 className="text-lg font-bold text-[#52555b] font-roboto">
+        <div className="p-3 md:p-4 border-b border-gray-200">
+          <h2 className="text-base md:text-lg font-bold text-[#52555b] font-roboto">
             Expert eGestor
           </h2>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-xs md:text-sm text-gray-600 mt-1">
             {slides.length} slides disponíveis
           </p>
           {useStaticData && (
@@ -102,46 +101,48 @@ const CourseSidebar = () => {
           )}
         </div>
         
-        {slideGroups.map((group, groupIndex) => (
-          <SidebarGroup key={groupIndex}>
-            <SidebarGroupLabel className="text-[#52555b] font-opensans font-semibold">
-              {group.name}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.slides.map((slideData) => {
-                  const Icon = getSlideIcon(slideData.tipo);
-                  const isActive = currentSlide === slideData.ordem;
-                  
-                  return (
-                    <SidebarMenuItem key={slideData.id}>
-                      <SidebarMenuButton
-                        onClick={() => handleSlideClick(slideData.ordem)}
-                        className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                          isActive 
-                            ? 'bg-[#d61c00] text-white' 
-                            : 'hover:bg-gray-100 text-[#52555b]'
-                        }`}
-                      >
-                        <Icon className="w-4 h-4" />
-                        <div className="flex-1 text-left">
-                          <div className="text-sm font-medium">
-                            {slideData.ordem}. {slideData.tipo === 'exercise' ? 'Exercício' : 
-                             slideData.tipo === 'attention' ? 'Atenção' :
-                             slideData.tipo === 'exam' ? 'Exame' : 'Aula'}
+        <div className="overflow-y-auto">
+          {slideGroups.map((group, groupIndex) => (
+            <SidebarGroup key={groupIndex}>
+              <SidebarGroupLabel className="text-[#52555b] font-opensans font-semibold text-xs md:text-sm px-3 md:px-4">
+                {group.name}
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {group.slides.map((slideData) => {
+                    const Icon = getSlideIcon(slideData.tipo);
+                    const isActive = currentSlide === slideData.ordem;
+                    
+                    return (
+                      <SidebarMenuItem key={slideData.id}>
+                        <SidebarMenuButton
+                          onClick={() => handleSlideClick(slideData.ordem)}
+                          className={`flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg transition-colors mx-2 ${
+                            isActive 
+                              ? 'bg-[#d61c00] text-white' 
+                              : 'hover:bg-gray-100 text-[#52555b]'
+                          }`}
+                        >
+                          <Icon className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" />
+                          <div className="flex-1 text-left min-w-0">
+                            <div className="text-xs md:text-sm font-medium truncate">
+                              {slideData.ordem}. {slideData.tipo === 'exercise' ? 'Exercício' : 
+                               slideData.tipo === 'attention' ? 'Atenção' :
+                               slideData.tipo === 'exam' ? 'Exame' : 'Aula'}
+                            </div>
+                            <div className="text-xs opacity-75 truncate">
+                              {slideData.titulo}
+                            </div>
                           </div>
-                          <div className="text-xs opacity-75 truncate">
-                            {slideData.titulo}
-                          </div>
-                        </div>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))}
+        </div>
       </SidebarContent>
     </Sidebar>
   );

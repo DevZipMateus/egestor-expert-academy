@@ -39,7 +39,6 @@ const ExamSlide: React.FC<ExamSlideProps> = ({ title, questions, onExamComplete 
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else {
-      // Calcular pontuação
       const correctAnswers = newAnswers.reduce((acc, answerIndex, questionIndex) => {
         return acc + (questions[questionIndex].options[answerIndex].correct ? 1 : 0);
       }, 0);
@@ -60,33 +59,33 @@ const ExamSlide: React.FC<ExamSlideProps> = ({ title, questions, onExamComplete 
   if (examCompleted && !showResults) {
     const passed = score >= 80;
     return (
-      <div className="space-y-6">
-        <h2 className="text-3xl font-bold text-[#52555b] font-roboto text-center">
+      <div className="space-y-4 md:space-y-6 max-w-2xl mx-auto">
+        <h2 className="text-2xl md:text-3xl font-bold text-[#52555b] font-roboto text-center px-4">
           Resultado do Exame
         </h2>
         
-        <div className="bg-white rounded-lg p-8 shadow-sm border text-center">
-          <div className={`inline-flex items-center justify-center w-24 h-24 rounded-full mb-6 ${
+        <div className="bg-white rounded-lg p-6 md:p-8 shadow-sm border text-center">
+          <div className={`inline-flex items-center justify-center w-16 h-16 md:w-24 md:h-24 rounded-full mb-4 md:mb-6 ${
             passed ? 'bg-green-100' : 'bg-red-100'
           }`}>
             {passed ? (
-              <Award className="w-12 h-12 text-green-600" />
+              <Award className="w-8 h-8 md:w-12 md:h-12 text-green-600" />
             ) : (
-              <AlertCircle className="w-12 h-12 text-red-600" />
+              <AlertCircle className="w-8 h-8 md:w-12 md:h-12 text-red-600" />
             )}
           </div>
           
-          <h3 className={`text-2xl font-bold mb-4 ${
+          <h3 className={`text-xl md:text-2xl font-bold mb-3 md:mb-4 ${
             passed ? 'text-green-600' : 'text-red-600'
           }`}>
             {passed ? 'Parabéns! Você foi aprovado!' : 'Você não atingiu a nota mínima'}
           </h3>
           
-          <p className="text-lg text-[#52555b] mb-6">
+          <p className="text-base md:text-lg text-[#52555b] mb-4 md:mb-6">
             Sua pontuação: <span className="font-bold">{score}%</span>
           </p>
           
-          <p className="text-[#52555b] mb-6">
+          <p className="text-sm md:text-base text-[#52555b] mb-4 md:mb-6 px-4">
             {passed 
               ? 'Você demonstrou excelente conhecimento do eGestor e está qualificado como Expert!'
               : 'Você precisa de pelo menos 80% para ser aprovado. Revise o conteúdo e tente novamente.'
@@ -97,7 +96,7 @@ const ExamSlide: React.FC<ExamSlideProps> = ({ title, questions, onExamComplete 
             <Button
               onClick={handleShowResults}
               variant="outline"
-              className="w-full border-[#d61c00] text-[#d61c00] hover:bg-[#d61c00] hover:text-white"
+              className="w-full border-[#d61c00] text-[#d61c00] hover:bg-[#d61c00] hover:text-white text-sm md:text-base"
             >
               Ver Respostas Detalhadas
             </Button>
@@ -109,15 +108,15 @@ const ExamSlide: React.FC<ExamSlideProps> = ({ title, questions, onExamComplete 
 
   if (showResults) {
     return (
-      <div className="space-y-6">
-        <h2 className="text-3xl font-bold text-[#52555b] font-roboto text-center">
+      <div className="space-y-4 md:space-y-6">
+        <h2 className="text-2xl md:text-3xl font-bold text-[#52555b] font-roboto text-center px-4">
           Revisão das Respostas
         </h2>
         
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
           {questions.map((question, questionIndex) => (
-            <div key={questionIndex} className="bg-white rounded-lg p-6 shadow-sm border">
-              <h3 className="text-lg font-semibold text-[#52555b] mb-4">
+            <div key={questionIndex} className="bg-white rounded-lg p-4 md:p-6 shadow-sm border">
+              <h3 className="text-base md:text-lg font-semibold text-[#52555b] mb-3 md:mb-4">
                 {questionIndex + 1}. {question.question}
               </h3>
               
@@ -126,7 +125,7 @@ const ExamSlide: React.FC<ExamSlideProps> = ({ title, questions, onExamComplete 
                   const isSelected = answers[questionIndex] === optionIndex;
                   const isCorrect = option.correct;
                   
-                  let className = 'p-3 rounded border-2 flex items-center justify-between ';
+                  let className = 'p-2 md:p-3 rounded border-2 flex items-center justify-between text-sm md:text-base ';
                   
                   if (isCorrect) {
                     className += 'bg-green-100 border-green-500 text-green-800';
@@ -138,17 +137,17 @@ const ExamSlide: React.FC<ExamSlideProps> = ({ title, questions, onExamComplete 
                   
                   return (
                     <div key={optionIndex} className={className}>
-                      <span>{option.text}</span>
-                      <div className="flex items-center space-x-2">
+                      <span className="pr-2">{option.text}</span>
+                      <div className="flex items-center space-x-2 flex-shrink-0">
                         {isSelected && (
-                          <span className="text-sm font-medium">
+                          <span className="text-xs md:text-sm font-medium">
                             (Sua resposta)
                           </span>
                         )}
                         {isCorrect ? (
-                          <Check className="w-5 h-5 text-green-600" />
+                          <Check className="w-4 h-4 md:w-5 md:h-5 text-green-600" />
                         ) : isSelected ? (
-                          <X className="w-5 h-5 text-red-600" />
+                          <X className="w-4 h-4 md:w-5 md:h-5 text-red-600" />
                         ) : null}
                       </div>
                     </div>
@@ -159,8 +158,8 @@ const ExamSlide: React.FC<ExamSlideProps> = ({ title, questions, onExamComplete 
           ))}
         </div>
         
-        <div className="text-center">
-          <p className="text-lg font-semibold text-[#52555b]">
+        <div className="text-center bg-white p-4 md:p-6 rounded-lg shadow-sm border">
+          <p className="text-base md:text-lg font-semibold text-[#52555b]">
             Pontuação Final: {score}% ({answers.filter((answer, index) => 
               questions[index].options[answer].correct
             ).length} de {questions.length} questões corretas)
@@ -171,27 +170,27 @@ const ExamSlide: React.FC<ExamSlideProps> = ({ title, questions, onExamComplete 
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold text-[#52555b] font-roboto">
+    <div className="space-y-4 md:space-y-6 max-w-4xl mx-auto">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 px-4">
+        <h2 className="text-2xl md:text-3xl font-bold text-[#52555b] font-roboto">
           {title}
         </h2>
-        <div className="text-[#52555b] font-opensans">
+        <div className="text-sm md:text-base text-[#52555b] font-opensans">
           Questão {currentQuestion + 1} de {questions.length}
         </div>
       </div>
       
-      <div className="bg-white rounded-lg p-8 shadow-sm border">
-        <h3 className="text-xl font-semibold text-[#52555b] mb-6">
+      <div className="bg-white rounded-lg p-4 md:p-8 shadow-sm border">
+        <h3 className="text-lg md:text-xl font-semibold text-[#52555b] mb-4 md:mb-6">
           {questions[currentQuestion].question}
         </h3>
         
-        <div className="space-y-4 mb-6">
+        <div className="space-y-3 md:space-y-4 mb-4 md:mb-6">
           {questions[currentQuestion].options.map((option, index) => (
             <button
               key={index}
               onClick={() => handleOptionSelect(index)}
-              className={`w-full p-4 text-left border-2 rounded-lg transition-all duration-200 ${
+              className={`w-full p-3 md:p-4 text-left border-2 rounded-lg transition-all duration-200 text-sm md:text-base ${
                 selectedOption === index 
                   ? 'bg-[#d61c00] text-white border-[#d61c00]' 
                   : 'bg-white border-gray-300 hover:border-[#d61c00] hover:bg-gray-50'
@@ -205,13 +204,13 @@ const ExamSlide: React.FC<ExamSlideProps> = ({ title, questions, onExamComplete 
         <Button
           onClick={handleNextQuestion}
           disabled={selectedOption === null}
-          className="w-full bg-[#d61c00] hover:bg-[#b01800] text-white font-opensans"
+          className="w-full bg-[#d61c00] hover:bg-[#b01800] text-white font-opensans text-sm md:text-base py-2 md:py-3"
         >
           {currentQuestion < questions.length - 1 ? 'Próxima Questão' : 'Finalizar Exame'}
         </Button>
       </div>
       
-      <div className="bg-gray-200 rounded-full h-2">
+      <div className="bg-gray-200 rounded-full h-2 mx-4">
         <div 
           className="bg-[#d61c00] h-2 rounded-full transition-all duration-300"
           style={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}

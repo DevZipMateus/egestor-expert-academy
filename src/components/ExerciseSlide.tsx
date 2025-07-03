@@ -50,30 +50,30 @@ const ExerciseSlide: React.FC<ExerciseSlideProps> = ({ title, question, options,
   };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-3xl font-bold text-[#52555b] font-roboto text-center">
+    <div className="space-y-4 md:space-y-6">
+      <h2 className="text-2xl md:text-3xl font-bold text-[#52555b] font-roboto text-center px-4">
         {title}
       </h2>
-      <div className="bg-white rounded-lg p-8 shadow-sm border">
-        <h3 className="text-xl font-semibold text-[#52555b] mb-6 font-opensans">
+      <div className="bg-white rounded-lg p-4 md:p-8 shadow-sm border mx-auto max-w-4xl">
+        <h3 className="text-lg md:text-xl font-semibold text-[#52555b] mb-4 md:mb-6 font-opensans">
           {question}
         </h3>
         
-        <div className="space-y-4 mb-6">
+        <div className="space-y-3 md:space-y-4 mb-4 md:mb-6">
           {options.map((option, index) => (
             <button
               key={index}
               onClick={() => handleOptionSelect(index)}
               disabled={answered}
-              className={`w-full p-4 text-left border-2 rounded-lg transition-all duration-200 flex items-center justify-between ${getOptionStyle(index)}`}
+              className={`w-full p-3 md:p-4 text-left border-2 rounded-lg transition-all duration-200 flex items-start justify-between ${getOptionStyle(index)} text-sm md:text-base`}
             >
-              <span className="font-opensans">{option.text}</span>
+              <span className="font-opensans pr-2">{option.text}</span>
               {showResult && (
-                <div className="ml-4">
+                <div className="ml-2 flex-shrink-0">
                   {option.correct ? (
-                    <Check className="w-5 h-5 text-green-600" />
+                    <Check className="w-4 h-4 md:w-5 md:h-5 text-green-600" />
                   ) : selectedOption === index ? (
-                    <X className="w-5 h-5 text-red-600" />
+                    <X className="w-4 h-4 md:w-5 md:h-5 text-red-600" />
                   ) : null}
                 </div>
               )}
@@ -85,35 +85,35 @@ const ExerciseSlide: React.FC<ExerciseSlideProps> = ({ title, question, options,
           <Button
             onClick={handleSubmit}
             disabled={selectedOption === null}
-            className="w-full bg-[#d61c00] hover:bg-[#b01800] text-white font-opensans"
+            className="w-full bg-[#d61c00] hover:bg-[#b01800] text-white font-opensans text-sm md:text-base py-2 md:py-3"
           >
             Responder
           </Button>
         )}
 
         {showResult && (
-          <div className="space-y-4">
-            <div className={`p-4 rounded-lg ${
+          <div className="space-y-3 md:space-y-4">
+            <div className={`p-3 md:p-4 rounded-lg ${
               options[selectedOption!].correct 
                 ? 'bg-green-100 border border-green-300' 
                 : 'bg-red-100 border border-red-300'
             }`}>
-              <p className={`font-semibold ${
+              <p className={`font-semibold text-sm md:text-base ${
                 options[selectedOption!].correct ? 'text-green-800' : 'text-red-800'
               }`}>
                 {options[selectedOption!].correct ? '✅ Correto!' : '❌ Incorreto!'}
               </p>
               {!options[selectedOption!].correct && (
-                <p className="text-sm text-red-700 mt-2">
+                <p className="text-xs md:text-sm text-red-700 mt-2">
                   A resposta correta é: {options.find(opt => opt.correct)?.text}
                 </p>
               )}
             </div>
 
             {explanation && (
-              <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-                <h4 className="font-semibold text-blue-800 mb-2 font-opensans">Explicação:</h4>
-                <p className="text-blue-700 text-sm font-opensans leading-relaxed">
+              <div className="bg-blue-50 border border-blue-200 p-3 md:p-4 rounded-lg">
+                <h4 className="font-semibold text-blue-800 mb-2 font-opensans text-sm md:text-base">Explicação:</h4>
+                <p className="text-blue-700 text-xs md:text-sm font-opensans leading-relaxed">
                   {explanation}
                 </p>
               </div>
