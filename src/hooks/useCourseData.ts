@@ -1,5 +1,4 @@
 
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { getSlideById, getTotalSlides } from '@/data/courseData';
@@ -152,7 +151,11 @@ export const useCourseData = () => {
         question: staticSlide.question || null,
         options: staticSlide.options || null,
         explanation: staticSlide.explanation || null,
-        examQuestions: staticSlide.examQuestions || null
+        examQuestions: staticSlide.examQuestions ? staticSlide.examQuestions.map(q => ({
+          question: q.question,
+          options: q.options,
+          explanation: q.explanation || null
+        })) : null
       };
     }
 
@@ -233,4 +236,3 @@ export const useCourseData = () => {
     getExamQuestions
   };
 };
-
