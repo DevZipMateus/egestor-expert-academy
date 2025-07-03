@@ -23,6 +23,7 @@ const Curso = () => {
   const [examPassed, setExamPassed] = useState<boolean>(false);
   const [supabaseUserId, setSupabaseUserId] = useState<string | null>(null);
   const [canAdvance, setCanAdvance] = useState<boolean>(true);
+  const [exerciseAnswered, setExerciseAnswered] = useState<boolean>(false);
   const currentSlide = parseInt(slide || '1');
   
   const { 
@@ -54,10 +55,18 @@ const Curso = () => {
 
   // Reset navigation control when slide changes
   useEffect(() => {
-    if (currentContent?.type === 'exercise' || currentContent?.type === 'exam') {
+    console.log('🔄 Slide mudou para:', currentSlide, 'Tipo:', currentContent?.type);
+    if (currentContent?.type === 'exercise') {
       setCanAdvance(false);
+      setExerciseAnswered(false);
+      console.log('🚫 Exercício detectado - bloqueando navegação');
+    } else if (currentContent?.type === 'exam') {
+      setCanAdvance(false);
+      console.log('🚫 Exame detectado - bloqueando navegação');
     } else {
       setCanAdvance(true);
+      setExerciseAnswered(false);
+      console.log('✅ Slide normal - liberando navegação');
     }
   }, [currentSlide, currentContent]);
 
@@ -149,8 +158,15 @@ const Curso = () => {
   };
 
   const goToNext = () => {
-    if (!canAdvance) {
+    console.log('🔍 Tentativa de avançar - canAdvance:', canAdvance, 'exerciseAnswered:', exerciseAnswered);
+    
+    if (currentContent?.type === 'exercise' && !exerciseAnswered) {
       toast.error("Você precisa responder a pergunta antes de continuar.");
+      return;
+    }
+
+    if (!canAdvance && currentContent?.type === 'exam') {
+      toast.error("Você precisa completar o exame antes de continuar.");
       return;
     }
 
@@ -166,15 +182,21 @@ const Curso = () => {
   };
 
   const handleExerciseAnswer = (correct: boolean) => {
+    console.log('📝 Resposta do exercício recebida:', correct);
+    setExerciseAnswered(true);
+    setCanAdvance(true);
+    
     if (correct) {
       toast.success("Resposta correta! 🎉");
     } else {
       toast.error("Resposta incorreta. Revise o conteúdo.");
     }
-    setCanAdvance(true);
+    
+    console.log('✅ Navegação liberada após resposta');
   };
 
   const handleExamComplete = (score: number, passed: boolean) => {
+    console.log('🎯 Exame completado:', score, 'passou:', passed);
     setExamScore(score);
     setExamPassed(passed);
     setCanAdvance(true);
@@ -366,10 +388,15 @@ const Curso = () => {
               <Button
                 onClick={goToNext}
                 className={`flex items-center space-x-2 text-white w-full sm:w-auto order-3 ${
-                  !canAdvance ? 'opacity-50 cursor-not-allowed' : ''
+                  (currentContent?.type === 'exercise' && !exerciseAnswered) || 
+                  (currentContent?.type === 'exam' && !canAdvance) ? 
+                  'opacity-50 cursor-not-allowed bg-gray-400' : 'bg-[#d61c00] hover:bg-[#b01800]'
                 }`}
-                style={{ backgroundColor: '#d61c00' }}
-                disabled={currentSlide === totalSlides && !examPassed}
+                disabled={
+                  (currentContent?.type === 'exercise' && !exerciseAnswered) ||
+                  (currentContent?.type === 'exam' && !canAdvance) ||
+                  (currentSlide === totalSlides && !examPassed)
+                }
               >
                 <span className="text-sm md:text-base">
                   {currentSlide === totalSlides ? 'FINALIZAR' : 'PRÓXIMO'}

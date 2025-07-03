@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Check, X } from "lucide-react";
@@ -22,15 +21,21 @@ const ExerciseSlide: React.FC<ExerciseSlideProps> = ({ title, question, options,
   const handleOptionSelect = (index: number) => {
     if (answered) return;
     setSelectedOption(index);
+    console.log('🎯 Opção selecionada:', index);
   };
 
   const handleSubmit = () => {
     if (selectedOption === null) return;
     
     const isCorrect = options[selectedOption].correct;
+    console.log('📝 Submetendo resposta:', selectedOption, 'Correta:', isCorrect);
+    
     setShowResult(true);
     setAnswered(true);
+    
+    // Chama onAnswer imediatamente após definir os estados
     onAnswer(isCorrect);
+    console.log('✅ onAnswer chamado com:', isCorrect);
   };
 
   const getOptionStyle = (index: number) => {
