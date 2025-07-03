@@ -14,17 +14,6 @@ import {
 import { useCourseData } from '@/hooks/useCourseData';
 import { Play, HelpCircle, AlertTriangle, FileText, Trophy } from 'lucide-react';
 
-interface SlideData {
-  id: number;
-  titulo: string;
-  tipo: string;
-  conteudo: string | null;
-  video_url: string | null;
-  ordem: number;
-  module_id: string | null;
-  course_id: string | null;
-}
-
 const CourseSidebar = () => {
   const navigate = useNavigate();
   const { slide } = useParams();
@@ -67,7 +56,7 @@ const CourseSidebar = () => {
   }
 
   // Organizar slides por ordem sequencial em grupos lógicos
-  const organizeSlidesByRange = (slidesList: SlideData[]) => {
+  const organizeSlidesByRange = (slidesList: typeof slides) => {
     return [
       {
         name: 'Clientes e Fornecedores',

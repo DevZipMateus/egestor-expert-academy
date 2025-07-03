@@ -41,19 +41,22 @@ export const useCourseData = () => {
   const loadCourseData = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Iniciando carregamento dos dados do curso...');
+      console.log('🔄 Iniciando carregamento dos dados do curso Expert eGestor...');
       
-      // Carregar slides do Supabase
-      console.log('📊 Buscando slides no Supabase...');
+      // Carregar slides do curso Expert eGestor
+      console.log('📊 Buscando slides do curso Expert eGestor...');
       const { data: slidesData, error: slidesError } = await supabase
         .from('slides')
         .select('*')
+        .eq('course_id', '550e8400-e29b-41d4-a716-446655440000')
+        .eq('ativo', true)
         .order('ordem');
 
       if (slidesError) {
         console.error('❌ Erro ao carregar slides do Supabase:', slidesError);
         console.log('📦 Usando dados estáticos como fallback');
         setError(slidesError.message);
+        setSlides(courseSlides);
         setUseStaticData(true);
         setLoading(false);
         return;
@@ -65,13 +68,14 @@ export const useCourseData = () => {
       if (!slidesData || slidesData.length === 0) {
         console.log('⚠️ Nenhum slide encontrado no banco de dados');
         console.log('📦 Usando dados estáticos como fallback');
+        setSlides(courseSlides);
         setUseStaticData(true);
         setLoading(false);
         return;
       }
 
-      // Carregar perguntas com opções
-      console.log('❓ Buscando perguntas no Supabase...');
+      // Carregar perguntas com opções do curso Expert eGestor
+      console.log('❓ Buscando perguntas do curso Expert eGestor...');
       const { data: questionsData, error: questionsError } = await supabase
         .from('questions')
         .select(`
@@ -83,10 +87,12 @@ export const useCourseData = () => {
             ordem
           )
         `)
+        .eq('course_id', '550e8400-e29b-41d4-a716-446655440000')
         .order('slide_id');
 
       if (questionsError) {
         console.error('❌ Erro ao carregar perguntas:', questionsError);
+        setError('Erro ao carregar perguntas');
       } else {
         console.log('✅ Perguntas carregadas:', questionsData?.length || 0, 'perguntas encontradas');
       }
@@ -107,6 +113,7 @@ export const useCourseData = () => {
     } catch (error) {
       console.error('💥 Erro crítico ao carregar dados do curso:', error);
       setError('Erro ao carregar dados do curso');
+      setSlides(courseSlides);
       setUseStaticData(true);
       console.log('📦 Fallback para dados estáticos ativado');
     } finally {
