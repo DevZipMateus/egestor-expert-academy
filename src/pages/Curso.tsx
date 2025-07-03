@@ -24,7 +24,6 @@ const Curso = () => {
   const [supabaseUserId, setSupabaseUserId] = useState<string | null>(null);
   const [canAdvance, setCanAdvance] = useState<boolean>(true);
   const [exerciseAnswered, setExerciseAnswered] = useState<boolean>(false);
-  const [answeredSlides, setAnsweredSlides] = useState<Set<number>>(new Set());
   const currentSlide = parseInt(slide || '1');
   const prevSlideRef = useRef<number>(currentSlide);
   
@@ -32,9 +31,11 @@ const Curso = () => {
     loading, 
     error, 
     useStaticData, 
+    answeredSlides,
     getSlideByOrder, 
     getQuestionBySlideId, 
-    getTotalSlidesCount 
+    getTotalSlidesCount,
+    markSlideAsAnswered
   } = useCourseData();
 
   const totalSlides = getTotalSlidesCount();
@@ -55,7 +56,7 @@ const Curso = () => {
     }
   }, [supabaseUserId, currentSlide]);
 
-  // Reset navigation control when slide changes - usando useRef para evitar loop
+  // Reset navigation control when slide changes - usando dados persistidos
   useEffect(() => {
     const slideChanged = prevSlideRef.current !== currentSlide;
     
@@ -64,6 +65,7 @@ const Curso = () => {
       prevSlideRef.current = currentSlide;
       
       const slideWasAnswered = answeredSlides.has(currentSlide);
+      console.log('🔍 Verificando se slide', currentSlide, 'foi respondido:', slideWasAnswered);
       
       if (currentContent?.type === 'exercise') {
         if (slideWasAnswered) {
@@ -197,11 +199,12 @@ const Curso = () => {
     }
   };
 
-  const handleExerciseAnswer = (correct: boolean) => {
+  const handleExerciseAnswer = async (correct: boolean) => {
     console.log('📝 Resposta do exercício recebida:', correct);
     
-    // Marca o slide como respondido
-    setAnsweredSlides(prev => new Set([...prev, currentSlide]));
+    // Salvar no banco de dados
+    await markSlideAsAnswered(currentSlide);
+    
     setExerciseAnswered(true);
     setCanAdvance(true);
     

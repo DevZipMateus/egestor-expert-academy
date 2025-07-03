@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { getSlideById, getTotalSlides } from '@/data/courseData';
@@ -50,9 +49,11 @@ export const useCourseData = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [useStaticData, setUseStaticData] = useState(false);
+  const [answeredSlides, setAnsweredSlides] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     loadCourseData();
+    loadAnsweredSlides();
   }, []);
 
   const loadCourseData = async () => {
@@ -132,6 +133,71 @@ export const useCourseData = () => {
       console.log('📦 Fallback para dados estáticos ativado');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAnsweredSlides = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      console.log('📚 Carregando slides respondidos para usuário:', user.id);
+      
+      const { data: progressData } = await supabase
+        .from('progresso_usuario')
+        .select('aulas_assistidas')
+        .eq('usuario_id', user.id)
+        .single();
+
+      if (progressData?.aulas_assistidas) {
+        const answered = new Set(progressData.aulas_assistidas);
+        setAnsweredSlides(answered);
+        console.log('✅ Slides respondidos carregados:', answered.size, 'slides');
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar slides respondidos:', error);
+    }
+  };
+
+  const markSlideAsAnswered = async (slideNumber: number) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      console.log('💾 Salvando resposta do slide:', slideNumber);
+
+      // Primeiro, buscar o progresso atual
+      const { data: currentProgress } = await supabase
+        .from('progresso_usuario')
+        .select('aulas_assistidas')
+        .eq('usuario_id', user.id)
+        .single();
+
+      const aulasAssistidas = currentProgress?.aulas_assistidas || [];
+      
+      // Adicionar o slide se não estiver na lista
+      if (!aulasAssistidas.includes(slideNumber)) {
+        aulasAssistidas.push(slideNumber);
+        
+        // Atualizar no banco
+        const { error } = await supabase
+          .from('progresso_usuario')
+          .update({
+            aulas_assistidas: aulasAssistidas,
+            data_atualizacao: new Date().toISOString()
+          })
+          .eq('usuario_id', user.id);
+
+        if (error) {
+          console.error('❌ Erro ao salvar resposta:', error);
+        } else {
+          // Atualizar estado local
+          setAnsweredSlides(prev => new Set([...prev, slideNumber]));
+          console.log('✅ Resposta salva com sucesso para slide:', slideNumber);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Erro ao marcar slide como respondido:', error);
     }
   };
 
@@ -230,9 +296,11 @@ export const useCourseData = () => {
     loading,
     error,
     useStaticData,
+    answeredSlides,
     getSlideByOrder,
     getQuestionBySlideId,
     getTotalSlidesCount,
-    getExamQuestions
+    getExamQuestions,
+    markSlideAsAnswered
   };
 };
