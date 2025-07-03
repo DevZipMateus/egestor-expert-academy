@@ -154,7 +154,7 @@ export const useCourseData = () => {
         examQuestions: staticSlide.examQuestions ? staticSlide.examQuestions.map(q => ({
           question: q.question,
           options: q.options,
-          explanation: q.explanation || null
+          explanation: null // Static exam questions don't have explanations
         })) : null
       };
     }
