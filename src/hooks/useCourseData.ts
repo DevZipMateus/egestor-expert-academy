@@ -27,6 +27,23 @@ interface QuestionData {
   }>;
 }
 
+// Interface for transformed slide data used by components
+interface TransformedSlideData {
+  id: number;
+  title: string;
+  type: string;
+  content: string | null;
+  videoUrl: string | null;
+  question: string | null;
+  options: Array<{ text: string; correct: boolean }> | null;
+  explanation: string | null;
+  examQuestions: Array<{
+    question: string;
+    options: Array<{ text: string; correct: boolean }>;
+    explanation: string | null;
+  }> | null;
+}
+
 export const useCourseData = () => {
   const [slides, setSlides] = useState<SlideData[]>([]);
   const [questions, setQuestions] = useState<QuestionData[]>([]);
@@ -121,7 +138,7 @@ export const useCourseData = () => {
     }
   };
 
-  const getSlideByOrder = (order: number) => {
+  const getSlideByOrder = (order: number): TransformedSlideData | null => {
     if (useStaticData) {
       console.log('📦 Usando dados estáticos para slide:', order);
       return getSlideById(order);
