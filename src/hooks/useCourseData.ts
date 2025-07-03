@@ -26,7 +26,6 @@ interface QuestionData {
   }>;
 }
 
-// Interface for transformed slide data used by components
 interface TransformedSlideData {
   id: number;
   title: string;
@@ -61,8 +60,6 @@ export const useCourseData = () => {
       setLoading(true);
       console.log('🔄 Iniciando carregamento dos dados do curso Expert eGestor...');
       
-      // Carregar slides do curso Expert eGestor
-      console.log('📊 Buscando slides do curso Expert eGestor...');
       const { data: slidesData, error: slidesError } = await supabase
         .from('slides')
         .select('*')
@@ -81,7 +78,6 @@ export const useCourseData = () => {
 
       console.log('✅ Slides carregados do Supabase:', slidesData?.length || 0, 'slides encontrados');
 
-      // Se não há slides no banco, usar dados estáticos
       if (!slidesData || slidesData.length === 0) {
         console.log('⚠️ Nenhum slide encontrado no banco de dados');
         console.log('📦 Usando dados estáticos como fallback');
@@ -90,8 +86,6 @@ export const useCourseData = () => {
         return;
       }
 
-      // Carregar perguntas com opções do curso Expert eGestor
-      console.log('❓ Buscando perguntas do curso Expert eGestor...');
       const { data: questionsData, error: questionsError } = await supabase
         .from('questions')
         .select(`
@@ -113,7 +107,6 @@ export const useCourseData = () => {
         console.log('✅ Perguntas carregadas:', questionsData?.length || 0, 'perguntas encontradas');
       }
 
-      // Processar perguntas para o formato esperado
       const processedQuestions = questionsData?.map(q => ({
         ...q,
         options: q.question_options?.sort((a, b) => a.ordem - b.ordem) || []
@@ -136,23 +129,90 @@ export const useCourseData = () => {
     }
   };
 
-  const loadAnsweredSlides = async () => {
+  const ensureUserExists = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.error('❌ Usuário não autenticado');
+        return null;
+      }
 
-      console.log('📚 Carregando slides respondidos para usuário:', user.id);
+      console.log('🔍 Verificando se usuário existe na tabela usuarios:', user.id);
+
+      // Verificar se o usuário existe na tabela usuarios
+      const { data: existingUser } = await supabase
+        .from('usuarios')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+
+      if (existingUser) {
+        console.log('✅ Usuário encontrado na tabela usuarios');
+        return user.id;
+      }
+
+      console.log('⚠️ Usuário não encontrado na tabela usuarios, criando...');
+      
+      // Criar usuário na tabela usuarios se não existir
+      const { data: newUser, error: createError } = await supabase
+        .from('usuarios')
+        .insert([{
+          id: user.id,
+          nome: user.email || 'Usuário',
+          email: user.email || ''
+        }])
+        .select('id')
+        .single();
+
+      if (createError) {
+        console.error('❌ Erro ao criar usuário na tabela usuarios:', createError);
+        return null;
+      }
+
+      console.log('✅ Usuário criado na tabela usuarios');
+
+      // Criar progresso inicial se não existir
+      const { error: progressError } = await supabase
+        .from('progresso_usuario')
+        .insert([{
+          usuario_id: user.id,
+          aulas_assistidas: [],
+          progresso_percentual: 0
+        }]);
+
+      if (progressError && !progressError.message.includes('duplicate')) {
+        console.error('⚠️ Erro ao criar progresso inicial:', progressError);
+      } else {
+        console.log('✅ Progresso inicial criado');
+      }
+
+      return user.id;
+    } catch (error) {
+      console.error('💥 Erro crítico ao verificar/criar usuário:', error);
+      return null;
+    }
+  };
+
+  const loadAnsweredSlides = async () => {
+    try {
+      const userId = await ensureUserExists();
+      if (!userId) return;
+
+      console.log('📚 Carregando slides respondidos para usuário:', userId);
       
       const { data: progressData } = await supabase
         .from('progresso_usuario')
         .select('aulas_assistidas')
-        .eq('usuario_id', user.id)
+        .eq('usuario_id', userId)
         .single();
 
       if (progressData?.aulas_assistidas) {
         const answered = new Set(progressData.aulas_assistidas);
         setAnsweredSlides(answered);
         console.log('✅ Slides respondidos carregados:', answered.size, 'slides');
+        console.log('📋 Lista de slides respondidos:', Array.from(answered));
+      } else {
+        console.log('ℹ️ Nenhum slide respondido encontrado');
       }
     } catch (error) {
       console.error('❌ Erro ao carregar slides respondidos:', error);
@@ -161,23 +221,35 @@ export const useCourseData = () => {
 
   const markSlideAsAnswered = async (slideNumber: number) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      console.log('💾 Iniciando salvamento da resposta do slide:', slideNumber);
 
-      console.log('💾 Salvando resposta do slide:', slideNumber);
+      const userId = await ensureUserExists();
+      if (!userId) {
+        console.error('❌ Não foi possível obter ID do usuário para salvar resposta');
+        return;
+      }
 
-      // Primeiro, buscar o progresso atual
+      // Atualizar estado local imediatamente
+      setAnsweredSlides(prev => {
+        const newSet = new Set([...prev, slideNumber]);
+        console.log('🔄 Estado local atualizado - slides respondidos:', Array.from(newSet));
+        return newSet;
+      });
+
+      // Buscar progresso atual
       const { data: currentProgress } = await supabase
         .from('progresso_usuario')
         .select('aulas_assistidas')
-        .eq('usuario_id', user.id)
+        .eq('usuario_id', userId)
         .single();
 
       const aulasAssistidas = currentProgress?.aulas_assistidas || [];
+      console.log('📊 Aulas assistidas atuais:', aulasAssistidas);
       
       // Adicionar o slide se não estiver na lista
       if (!aulasAssistidas.includes(slideNumber)) {
         aulasAssistidas.push(slideNumber);
+        console.log('➕ Adicionando slide', slideNumber, 'à lista de assistidas');
         
         // Atualizar no banco
         const { error } = await supabase
@@ -186,18 +258,31 @@ export const useCourseData = () => {
             aulas_assistidas: aulasAssistidas,
             data_atualizacao: new Date().toISOString()
           })
-          .eq('usuario_id', user.id);
+          .eq('usuario_id', userId);
 
         if (error) {
-          console.error('❌ Erro ao salvar resposta:', error);
+          console.error('❌ Erro ao salvar resposta no banco:', error);
+          // Reverter estado local em caso de erro
+          setAnsweredSlides(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(slideNumber);
+            return newSet;
+          });
         } else {
-          // Atualizar estado local
-          setAnsweredSlides(prev => new Set([...prev, slideNumber]));
-          console.log('✅ Resposta salva com sucesso para slide:', slideNumber);
+          console.log('✅ Resposta salva com sucesso no banco para slide:', slideNumber);
+          console.log('💾 Aulas assistidas salvas:', aulasAssistidas);
         }
+      } else {
+        console.log('ℹ️ Slide', slideNumber, 'já estava marcado como respondido');
       }
     } catch (error) {
-      console.error('❌ Erro ao marcar slide como respondido:', error);
+      console.error('❌ Erro crítico ao marcar slide como respondido:', error);
+      // Reverter estado local em caso de erro
+      setAnsweredSlides(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(slideNumber);
+        return newSet;
+      });
     }
   };
 

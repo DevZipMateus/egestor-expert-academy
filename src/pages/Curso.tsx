@@ -1,8 +1,8 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import VideoSlide from "@/components/VideoSlide";
 import ExerciseSlide from "@/components/ExerciseSlide";
 import AttentionSlide from "@/components/AttentionSlide";
@@ -21,7 +21,6 @@ const Curso = () => {
   const { user, isAuthenticated } = useAuth();
   const [examScore, setExamScore] = useState<number | null>(null);
   const [examPassed, setExamPassed] = useState<boolean>(false);
-  const [supabaseUserId, setSupabaseUserId] = useState<string | null>(null);
   const [canAdvance, setCanAdvance] = useState<boolean>(true);
   const [exerciseAnswered, setExerciseAnswered] = useState<boolean>(false);
   const currentSlide = parseInt(slide || '1');
@@ -46,15 +45,7 @@ const Curso = () => {
       navigate('/login');
       return;
     }
-    
-    createOrFindSupabaseUser();
   }, [isAuthenticated, navigate]);
-
-  useEffect(() => {
-    if (supabaseUserId && currentSlide) {
-      updateProgress(currentSlide);
-    }
-  }, [supabaseUserId, currentSlide]);
 
   // Reset navigation control when slide changes - usando dados persistidos
   useEffect(() => {
@@ -87,85 +78,6 @@ const Curso = () => {
       }
     }
   }, [currentSlide, currentContent?.type, answeredSlides]);
-
-  const createOrFindSupabaseUser = async () => {
-    if (!user) return;
-
-    try {
-      const { data: existingUser } = await supabase
-        .from('usuarios')
-        .select('id')
-        .eq('email', user.email)
-        .single();
-
-      if (existingUser) {
-        setSupabaseUserId(existingUser.id);
-        return;
-      }
-
-      const { data: newUser, error } = await supabase
-        .from('usuarios')
-        .insert([{
-          nome: user.nome,
-          email: user.email
-        }])
-        .select('id')
-        .single();
-
-      if (error) {
-        console.error('Erro ao criar usuário no Supabase:', error);
-        return;
-      }
-
-      if (newUser) {
-        setSupabaseUserId(newUser.id);
-        
-        await supabase
-          .from('progresso_usuario')
-          .insert([{
-            usuario_id: newUser.id
-          }]);
-      }
-    } catch (error) {
-      console.error('Erro ao gerenciar usuário no Supabase:', error);
-    }
-  };
-
-  const updateProgress = async (aulaAtual: number) => {
-    if (!supabaseUserId) return;
-
-    try {
-      const { data: currentProgress } = await supabase
-        .from('progresso_usuario')
-        .select('aulas_assistidas')
-        .eq('usuario_id', supabaseUserId)
-        .single();
-
-      const aulasAssistidas = currentProgress?.aulas_assistidas || [];
-      
-      if (!aulasAssistidas.includes(aulaAtual)) {
-        aulasAssistidas.push(aulaAtual);
-      }
-
-      const progressoPercentual = (aulasAssistidas.length / totalSlides) * 100;
-
-      const { error } = await supabase
-        .from('progresso_usuario')
-        .update({
-          ultima_aula: aulaAtual,
-          aulas_assistidas: aulasAssistidas,
-          progresso_percentual: progressoPercentual,
-          data_atualizacao: new Date().toISOString()
-        })
-        .eq('usuario_id', supabaseUserId);
-
-      if (error) {
-        console.error('Erro ao atualizar progresso:', error);
-      }
-    } catch (error) {
-      console.error('Erro ao atualizar progresso:', error);
-    }
-  };
 
   const goToPrevious = () => {
     if (currentSlide > 1) {
@@ -202,7 +114,7 @@ const Curso = () => {
   const handleExerciseAnswer = async (correct: boolean) => {
     console.log('📝 Resposta do exercício recebida:', correct);
     
-    // Salvar no banco de dados
+    // Salvar no banco de dados usando o sistema unificado
     await markSlideAsAnswered(currentSlide);
     
     setExerciseAnswered(true);
