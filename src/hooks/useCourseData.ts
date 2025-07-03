@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { courseSlides, getTotalSlides, getSlideById } from '@/data/courseData';
+import { getSlideById, getTotalSlides } from '@/data/courseData';
 
 interface SlideData {
   id: number;
@@ -138,7 +138,21 @@ export const useCourseData = () => {
   const getSlideByOrder = (order: number): TransformedSlideData | null => {
     if (useStaticData) {
       console.log('📦 Usando dados estáticos para slide:', order);
-      return getSlideById(order);
+      const staticSlide = getSlideById(order);
+      if (!staticSlide) return null;
+      
+      // Transform static slide to match TransformedSlideData interface
+      return {
+        id: staticSlide.id,
+        title: staticSlide.title,
+        type: staticSlide.type,
+        content: staticSlide.content || null,
+        videoUrl: staticSlide.videoUrl || null,
+        question: staticSlide.question || null,
+        options: staticSlide.options || null,
+        explanation: staticSlide.explanation || null,
+        examQuestions: staticSlide.examQuestions || null
+      };
     }
 
     console.log('🔍 Buscando slide', order, 'no banco de dados');
