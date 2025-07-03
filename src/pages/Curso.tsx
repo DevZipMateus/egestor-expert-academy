@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import VideoSlide from "@/components/VideoSlide";
 import ExerciseSlide from "@/components/ExerciseSlide";
@@ -24,7 +24,9 @@ const Curso = () => {
   const [supabaseUserId, setSupabaseUserId] = useState<string | null>(null);
   const [canAdvance, setCanAdvance] = useState<boolean>(true);
   const [exerciseAnswered, setExerciseAnswered] = useState<boolean>(false);
+  const [answeredSlides, setAnsweredSlides] = useState<Set<number>>(new Set());
   const currentSlide = parseInt(slide || '1');
+  const prevSlideRef = useRef<number>(currentSlide);
   
   const { 
     loading, 
@@ -53,22 +55,36 @@ const Curso = () => {
     }
   }, [supabaseUserId, currentSlide]);
 
-  // Reset navigation control when slide changes
+  // Reset navigation control when slide changes - usando useRef para evitar loop
   useEffect(() => {
-    console.log('🔄 Slide mudou para:', currentSlide, 'Tipo:', currentContent?.type);
-    if (currentContent?.type === 'exercise') {
-      setCanAdvance(false);
-      setExerciseAnswered(false);
-      console.log('🚫 Exercício detectado - bloqueando navegação');
-    } else if (currentContent?.type === 'exam') {
-      setCanAdvance(false);
-      console.log('🚫 Exame detectado - bloqueando navegação');
-    } else {
-      setCanAdvance(true);
-      setExerciseAnswered(false);
-      console.log('✅ Slide normal - liberando navegação');
+    const slideChanged = prevSlideRef.current !== currentSlide;
+    
+    if (slideChanged) {
+      console.log('🔄 Slide mudou de', prevSlideRef.current, 'para:', currentSlide, 'Tipo:', currentContent?.type);
+      prevSlideRef.current = currentSlide;
+      
+      const slideWasAnswered = answeredSlides.has(currentSlide);
+      
+      if (currentContent?.type === 'exercise') {
+        if (slideWasAnswered) {
+          console.log('✅ Exercício já foi respondido anteriormente - liberando navegação');
+          setCanAdvance(true);
+          setExerciseAnswered(true);
+        } else {
+          console.log('🚫 Exercício detectado - bloqueando navegação');
+          setCanAdvance(false);
+          setExerciseAnswered(false);
+        }
+      } else if (currentContent?.type === 'exam') {
+        setCanAdvance(false);
+        console.log('🚫 Exame detectado - bloqueando navegação');
+      } else {
+        setCanAdvance(true);
+        setExerciseAnswered(false);
+        console.log('✅ Slide normal - liberando navegação');
+      }
     }
-  }, [currentSlide, currentContent]);
+  }, [currentSlide, currentContent?.type, answeredSlides]);
 
   const createOrFindSupabaseUser = async () => {
     if (!user) return;
@@ -183,6 +199,9 @@ const Curso = () => {
 
   const handleExerciseAnswer = (correct: boolean) => {
     console.log('📝 Resposta do exercício recebida:', correct);
+    
+    // Marca o slide como respondido
+    setAnsweredSlides(prev => new Set([...prev, currentSlide]));
     setExerciseAnswered(true);
     setCanAdvance(true);
     
@@ -192,7 +211,7 @@ const Curso = () => {
       toast.error("Resposta incorreta. Revise o conteúdo.");
     }
     
-    console.log('✅ Navegação liberada após resposta');
+    console.log('✅ Navegação liberada após resposta para slide:', currentSlide);
   };
 
   const handleExamComplete = (score: number, passed: boolean) => {
