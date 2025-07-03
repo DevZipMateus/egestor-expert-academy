@@ -1,4 +1,5 @@
 
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { getSlideById, getTotalSlides } from '@/data/courseData';
@@ -205,7 +206,7 @@ export const useCourseData = () => {
         text: opt.texto,
         correct: opt.correta
       })),
-      explanation: q.explicacao
+      explanation: q.explicacao || null
     }));
     console.log('✅ Perguntas do exame:', examQuestions.length);
     return examQuestions;
@@ -232,3 +233,4 @@ export const useCourseData = () => {
     getExamQuestions
   };
 };
+
