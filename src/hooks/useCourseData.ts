@@ -60,7 +60,6 @@ export const useCourseData = () => {
       }
 
       console.log('✅ Slides carregados do Supabase:', slidesData?.length || 0, 'slides encontrados');
-      console.log('📋 Primeiros 3 slides:', slidesData?.slice(0, 3));
 
       // Se não há slides no banco, usar dados estáticos
       if (!slidesData || slidesData.length === 0) {
@@ -145,9 +144,14 @@ export const useCourseData = () => {
   };
 
   const getQuestionBySlideId = (slideId: number) => {
+    console.log('🔍 Buscando pergunta para slide ID:', slideId);
     const question = questions.find(q => q.slide_id === slideId);
-    if (!question) return null;
+    if (!question) {
+      console.log('❌ Nenhuma pergunta encontrada para slide:', slideId);
+      return null;
+    }
 
+    console.log('✅ Pergunta encontrada para slide', slideId, ':', question.pergunta);
     return {
       question: question.pergunta,
       options: question.options.map(opt => ({
@@ -159,7 +163,8 @@ export const useCourseData = () => {
   };
 
   const getExamQuestions = () => {
-    return questions.map(q => ({
+    console.log('📝 Gerando perguntas do exame final...');
+    const examQuestions = questions.map(q => ({
       question: q.pergunta,
       options: q.options.map(opt => ({
         text: opt.texto,
@@ -167,6 +172,8 @@ export const useCourseData = () => {
       })),
       explanation: q.explicacao
     }));
+    console.log('✅ Perguntas do exame:', examQuestions.length);
+    return examQuestions;
   };
 
   const getTotalSlidesCount = () => {

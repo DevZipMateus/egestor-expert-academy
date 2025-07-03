@@ -37,23 +37,6 @@ const CourseSidebar = () => {
     }
   };
 
-  const getSlideTypeLabel = (type: string) => {
-    switch (type) {
-      case 'content':
-        return 'Conteúdo';
-      case 'exercise':
-        return 'Exercício';
-      case 'attention':
-        return 'Atenção';
-      case 'exam':
-        return 'Exame';
-      case 'final':
-        return 'Final';
-      default:
-        return 'Conteúdo';
-    }
-  };
-
   const handleSlideClick = (slideOrder: number) => {
     navigate(`/curso/${slideOrder}`);
   };
@@ -72,36 +55,61 @@ const CourseSidebar = () => {
     );
   }
 
-  // Agrupar slides por tipo para melhor organização
-  const groupedSlides = slides.reduce((acc, slide) => {
-    const type = getSlideTypeLabel(slide.tipo);
-    if (!acc[type]) {
-      acc[type] = [];
-    }
-    acc[type].push(slide);
-    return acc;
-  }, {} as Record<string, typeof slides>);
+  // Organizar slides por ordem sequencial em grupos lógicos
+  const organizeSlidesByRange = (slides: typeof slides) => {
+    return [
+      {
+        name: 'Clientes e Fornecedores',
+        slides: slides.filter(s => s.ordem >= 1 && s.ordem <= 3)
+      },
+      {
+        name: 'Produtos e Estoque',
+        slides: slides.filter(s => s.ordem >= 4 && s.ordem <= 7)
+      },
+      {
+        name: 'Vendas e Pagamentos',
+        slides: slides.filter(s => s.ordem >= 8 && s.ordem <= 25)
+      },
+      {
+        name: 'Compras e Fiscal',
+        slides: slides.filter(s => s.ordem >= 26 && s.ordem <= 30)
+      },
+      {
+        name: 'Configurações Avançadas',
+        slides: slides.filter(s => s.ordem >= 31 && s.ordem <= 46)
+      },
+      {
+        name: 'Exame Final',
+        slides: slides.filter(s => s.ordem === 47)
+      }
+    ].filter(group => group.slides.length > 0);
+  };
+
+  const slideGroups = organizeSlidesByRange(slides);
 
   return (
     <Sidebar className="w-80 bg-white border-r border-gray-200">
       <SidebarContent>
         <div className="p-4 border-b border-gray-200">
           <h2 className="text-lg font-bold text-[#52555b] font-roboto">
-            Navegação do Curso
+            Expert eGestor
           </h2>
+          <p className="text-sm text-gray-600 mt-1">
+            {slides.length} slides disponíveis
+          </p>
           {useStaticData && (
             <p className="text-xs text-yellow-600 mt-1">Modo Offline</p>
           )}
         </div>
         
-        {Object.entries(groupedSlides).map(([groupType, slidesList]) => (
-          <SidebarGroup key={groupType}>
+        {slideGroups.map((group, groupIndex) => (
+          <SidebarGroup key={groupIndex}>
             <SidebarGroupLabel className="text-[#52555b] font-opensans font-semibold">
-              {groupType}
+              {group.name}
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {slidesList.map((slideData) => {
+                {group.slides.map((slideData) => {
                   const Icon = getSlideIcon(slideData.tipo);
                   const isActive = currentSlide === slideData.ordem;
                   
@@ -118,7 +126,9 @@ const CourseSidebar = () => {
                         <Icon className="w-4 h-4" />
                         <div className="flex-1 text-left">
                           <div className="text-sm font-medium">
-                            Slide {slideData.ordem}
+                            {slideData.ordem}. {slideData.tipo === 'exercise' ? 'Exercício' : 
+                             slideData.tipo === 'attention' ? 'Atenção' :
+                             slideData.tipo === 'exam' ? 'Exame' : 'Aula'}
                           </div>
                           <div className="text-xs opacity-75 truncate">
                             {slideData.titulo}
