@@ -14,6 +14,17 @@ import {
 import { useCourseData } from '@/hooks/useCourseData';
 import { Play, HelpCircle, AlertTriangle, FileText, Trophy } from 'lucide-react';
 
+interface SlideData {
+  id: number;
+  titulo: string;
+  tipo: string;
+  conteudo: string | null;
+  video_url: string | null;
+  ordem: number;
+  module_id: string | null;
+  course_id: string | null;
+}
+
 const CourseSidebar = () => {
   const navigate = useNavigate();
   const { slide } = useParams();
@@ -56,31 +67,31 @@ const CourseSidebar = () => {
   }
 
   // Organizar slides por ordem sequencial em grupos lógicos
-  const organizeSlidesByRange = (slides: typeof slides) => {
+  const organizeSlidesByRange = (slidesList: SlideData[]) => {
     return [
       {
         name: 'Clientes e Fornecedores',
-        slides: slides.filter(s => s.ordem >= 1 && s.ordem <= 3)
+        slides: slidesList.filter(s => s.ordem >= 1 && s.ordem <= 3)
       },
       {
         name: 'Produtos e Estoque',
-        slides: slides.filter(s => s.ordem >= 4 && s.ordem <= 7)
+        slides: slidesList.filter(s => s.ordem >= 4 && s.ordem <= 7)
       },
       {
         name: 'Vendas e Pagamentos',
-        slides: slides.filter(s => s.ordem >= 8 && s.ordem <= 25)
+        slides: slidesList.filter(s => s.ordem >= 8 && s.ordem <= 25)
       },
       {
         name: 'Compras e Fiscal',
-        slides: slides.filter(s => s.ordem >= 26 && s.ordem <= 30)
+        slides: slidesList.filter(s => s.ordem >= 26 && s.ordem <= 30)
       },
       {
         name: 'Configurações Avançadas',
-        slides: slides.filter(s => s.ordem >= 31 && s.ordem <= 46)
+        slides: slidesList.filter(s => s.ordem >= 31 && s.ordem <= 46)
       },
       {
         name: 'Exame Final',
-        slides: slides.filter(s => s.ordem === 47)
+        slides: slidesList.filter(s => s.ordem === 47)
       }
     ].filter(group => group.slides.length > 0);
   };
