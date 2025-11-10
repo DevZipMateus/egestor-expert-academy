@@ -5,8 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Plus, Edit, Trash2, Video, HelpCircle, Users, ChevronDown, ChevronRight } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import ModuleForm from './ModuleForm';
+import CourseOverviewTab from './CourseOverviewTab';
+import ModuleSlides from './ModuleSlides';
+import ModuleQuestions from './ModuleQuestions';
+import CourseExamTab from './CourseExamTab';
+import CourseCertificatesTab from './CourseCertificatesTab';
 
 interface Course {
   id: string;
@@ -38,6 +44,14 @@ const CourseDetails = ({ course, onBack }: CourseDetailsProps) => {
   const [showModuleForm, setShowModuleForm] = useState(false);
   const [editingModule, setEditingModule] = useState<string | null>(null);
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState('overview');
+  const [stats, setStats] = useState({
+    totalModules: 0,
+    totalSlides: 0,
+    totalQuestions: 0,
+    totalExams: 0,
+    totalCertificates: 0,
+  });
 
   useEffect(() => {
     fetchModules();
@@ -52,6 +66,22 @@ const CourseDetails = ({ course, onBack }: CourseDetailsProps) => {
         .order('ordem');
 
       if (error) throw error;
+
+      // Buscar estatísticas gerais
+      const [slidesCount, questionsCount, examsCount, certificatesCount] = await Promise.all([
+        supabase.from('slides').select('id', { count: 'exact' }).eq('course_id', course.id),
+        supabase.from('questions').select('id', { count: 'exact' }).eq('course_id', course.id),
+        supabase.from('course_exams').select('id', { count: 'exact' }).eq('course_id', course.id),
+        supabase.from('certificates').select('id', { count: 'exact' }).eq('course_id', course.id),
+      ]);
+
+      setStats({
+        totalModules: modulesData?.length || 0,
+        totalSlides: slidesCount.count || 0,
+        totalQuestions: questionsCount.count || 0,
+        totalExams: examsCount.count || 0,
+        totalCertificates: certificatesCount.count || 0,
+      });
 
       // Buscar estatísticas de cada módulo
       const modulesWithStats = await Promise.all(
@@ -165,129 +195,155 @@ const CourseDetails = ({ course, onBack }: CourseDetailsProps) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            onClick={onBack}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Voltar
-          </Button>
-          <div>
-            <h3 className="text-lg font-semibold font-roboto" style={{ color: '#52555b' }}>
-              {course.titulo}
-            </h3>
-            <p className="text-sm text-gray-600 font-opensans">{course.descricao}</p>
-          </div>
-        </div>
-        <Button 
-          onClick={handleNewModule}
-          className="bg-red-600 hover:bg-red-700"
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          onClick={onBack}
+          className="flex items-center gap-2"
         >
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Módulo
+          <ArrowLeft className="w-4 h-4" />
+          Voltar
         </Button>
+        <div>
+          <h3 className="text-lg font-semibold font-roboto">
+            {course.titulo}
+          </h3>
+          <p className="text-sm text-muted-foreground font-opensans">{course.descricao}</p>
+        </div>
       </div>
 
-      {modules.length === 0 ? (
-        <Card>
-          <CardContent className="text-center py-8">
-            <Users className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-500">Nenhum módulo cadastrado ainda.</p>
-            <p className="text-sm text-gray-400 mt-2">
-              Clique em "Novo Módulo" para começar a organizar o conteúdo do curso.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {modules.map((module) => (
-            <Card key={module.id} className="hover:shadow-md transition-shadow">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3 flex-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleModuleExpansion(module.id)}
-                      className="p-1"
-                    >
-                      {expandedModules.has(module.id) ? (
-                        <ChevronDown className="w-4 h-4" />
-                      ) : (
-                        <ChevronRight className="w-4 h-4" />
-                      )}
-                    </Button>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <CardTitle className="text-base font-opensans">
-                          {module.titulo}
-                        </CardTitle>
-                        <Badge variant={module.ativo ? "default" : "secondary"}>
-                          {module.ativo ? 'Ativo' : 'Inativo'}
-                        </Badge>
-                      </div>
-                      {module.descricao && (
-                        <p className="text-sm text-gray-600 mt-1 font-opensans">
-                          {module.descricao}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 ml-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEditModule(module.id)}
-                      className="text-gray-600 hover:text-gray-800 hover:bg-gray-50"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteModule(module.id)}
-                      className="text-red-600 hover:text-red-800 hover:bg-red-50"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-6 text-sm text-gray-600">
-                  <div className="flex items-center gap-1">
-                    <Video className="w-4 h-4" />
-                    <span>{module._count?.slides || 0} slides</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <HelpCircle className="w-4 h-4" />
-                    <span>{module._count?.questions || 0} perguntas</span>
-                  </div>
-                </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+          <TabsTrigger value="modules">Módulos</TabsTrigger>
+          <TabsTrigger value="exam">Exame Final</TabsTrigger>
+          <TabsTrigger value="certificates">Certificados</TabsTrigger>
+        </TabsList>
 
-                {expandedModules.has(module.id) && (
-                  <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-4">
-                      Conteúdo do módulo será exibido aqui (slides e perguntas)
-                    </p>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline">
-                        Gerenciar Slides
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        Gerenciar Perguntas
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+        <TabsContent value="overview" className="mt-6">
+          <CourseOverviewTab course={course} stats={stats} />
+        </TabsContent>
+
+        <TabsContent value="modules" className="mt-6">
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <Button 
+                onClick={handleNewModule}
+                className="bg-primary hover:bg-primary/90"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Módulo
+              </Button>
+            </div>
+
+            {modules.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
+                  <p className="text-muted-foreground">Nenhum módulo cadastrado.</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Clique em "Novo Módulo" para começar.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {modules.map((module) => (
+                  <Card key={module.id} className="hover:shadow-md transition-shadow">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3 flex-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleModuleExpansion(module.id)}
+                            className="p-1"
+                          >
+                            {expandedModules.has(module.id) ? (
+                              <ChevronDown className="w-4 h-4" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4" />
+                            )}
+                          </Button>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3">
+                              <CardTitle className="text-base font-opensans">
+                                {module.titulo}
+                              </CardTitle>
+                              <Badge variant={module.ativo ? "default" : "secondary"}>
+                                {module.ativo ? 'Ativo' : 'Inativo'}
+                              </Badge>
+                            </div>
+                            {module.descricao && (
+                              <p className="text-sm text-muted-foreground mt-1 font-opensans">
+                                {module.descricao}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 ml-4">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditModule(module.id)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteModule(module.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Video className="w-4 h-4" />
+                          <span>{module._count?.slides || 0} slides</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <HelpCircle className="w-4 h-4" />
+                          <span>{module._count?.questions || 0} perguntas</span>
+                        </div>
+                      </div>
+
+                      {expandedModules.has(module.id) && (
+                        <div className="mt-4">
+                          <Tabs defaultValue="slides" className="w-full">
+                            <TabsList className="grid w-full grid-cols-2">
+                              <TabsTrigger value="slides">Slides</TabsTrigger>
+                              <TabsTrigger value="questions">Perguntas</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="slides" className="mt-4">
+                              <ModuleSlides moduleId={module.id} courseId={course.id} />
+                            </TabsContent>
+                            <TabsContent value="questions" className="mt-4">
+                              <ModuleQuestions moduleId={module.id} courseId={course.id} />
+                            </TabsContent>
+                          </Tabs>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="exam" className="mt-6">
+          <CourseExamTab courseId={course.id} />
+        </TabsContent>
+
+        <TabsContent value="certificates" className="mt-6">
+          <CourseCertificatesTab courseId={course.id} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
