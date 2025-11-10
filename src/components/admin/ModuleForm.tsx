@@ -17,7 +17,7 @@ interface ModuleFormProps {
 }
 
 const ModuleForm = ({ courseId, moduleId, onSave, onCancel }: ModuleFormProps) => {
-  const [nome, setNome] = useState('');
+  const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
   const [ordem, setOrdem] = useState(1);
   const [ativo, setAtivo] = useState(true);
@@ -35,14 +35,14 @@ const ModuleForm = ({ courseId, moduleId, onSave, onCancel }: ModuleFormProps) =
   const loadModule = async () => {
     try {
       const { data: module, error } = await supabase
-        .from('course_modules')
+        .from('modules')
         .select('*')
         .eq('id', moduleId)
         .single();
 
       if (error) throw error;
 
-      setNome(module.nome);
+      setTitulo(module.titulo);
       setDescricao(module.descricao || '');
       setOrdem(module.ordem);
       setAtivo(module.ativo);
@@ -55,7 +55,7 @@ const ModuleForm = ({ courseId, moduleId, onSave, onCancel }: ModuleFormProps) =
   const getNextOrder = async () => {
     try {
       const { data, error } = await supabase
-        .from('course_modules')
+        .from('modules')
         .select('ordem')
         .eq('course_id', courseId)
         .order('ordem', { ascending: false })
@@ -70,8 +70,8 @@ const ModuleForm = ({ courseId, moduleId, onSave, onCancel }: ModuleFormProps) =
   };
 
   const handleSave = async () => {
-    if (!nome.trim()) {
-      toast.error('Por favor, insira o nome do módulo');
+    if (!titulo.trim()) {
+      toast.error('Por favor, insira o título do módulo');
       return;
     }
 
@@ -80,9 +80,9 @@ const ModuleForm = ({ courseId, moduleId, onSave, onCancel }: ModuleFormProps) =
     try {
       if (moduleId) {
         const { error } = await supabase
-          .from('course_modules')
+          .from('modules')
           .update({
-            nome,
+            titulo,
             descricao,
             ordem,
             ativo,
@@ -94,10 +94,10 @@ const ModuleForm = ({ courseId, moduleId, onSave, onCancel }: ModuleFormProps) =
         toast.success('Módulo atualizado com sucesso!');
       } else {
         const { error } = await supabase
-          .from('course_modules')
+          .from('modules')
           .insert({
             course_id: courseId,
-            nome,
+            titulo,
             descricao,
             ordem,
             ativo
@@ -135,12 +135,12 @@ const ModuleForm = ({ courseId, moduleId, onSave, onCancel }: ModuleFormProps) =
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">
-          <Label htmlFor="nome">Nome do Módulo</Label>
+          <Label htmlFor="titulo">Título do Módulo</Label>
           <Input
-            id="nome"
-            placeholder="Digite o nome do módulo..."
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
+            id="titulo"
+            placeholder="Digite o título do módulo..."
+            value={titulo}
+            onChange={(e) => setTitulo(e.target.value)}
           />
         </div>
 

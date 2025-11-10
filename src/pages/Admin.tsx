@@ -11,12 +11,12 @@ import AdminQuestions from '@/components/admin/AdminQuestions';
 
 const Admin = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState('courses');
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/auth');
   };
 
   return (
@@ -37,7 +37,7 @@ const Admin = () => {
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <User className="w-5 h-5 text-gray-600" />
-                  <span className="font-opensans text-gray-700">{user?.nome}</span>
+                  <span className="font-opensans text-gray-700">{user?.email}</span>
                   <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">Admin</span>
                 </div>
                 <Button

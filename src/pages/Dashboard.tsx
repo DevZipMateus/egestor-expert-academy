@@ -10,7 +10,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -18,9 +18,9 @@ const Dashboard = () => {
     setProgress(Math.floor(Math.random() * 100));
   }, []);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/auth');
   };
 
   const handleContinueCourse = () => {
@@ -45,7 +45,7 @@ const Dashboard = () => {
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <User className="w-5 h-5 text-gray-600" />
-                  <span className="font-opensans text-gray-700">{user?.nome}</span>
+                  <span className="font-opensans text-gray-700">{user?.email}</span>
                 </div>
                 <Button
                   variant="outline"
@@ -68,7 +68,7 @@ const Dashboard = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="font-roboto" style={{ color: '#52555b' }}>
-                    Bem-vindo de volta, {user?.nome}!
+                    Bem-vindo de volta!
                   </CardTitle>
                 </CardHeader>
                 <CardContent>

@@ -37,22 +37,21 @@ export const ensureAdminAccount = async () => {
       if (signUpData.user) {
         console.log('Conta admin criada com sucesso');
         
-        // Inserir na tabela usuarios
-        const { error: userInsertError } = await supabase
-          .from('usuarios')
+        // O trigger já criou o perfil automaticamente
+        // Agora adicionar role de admin
+        const { error: roleError } = await supabase
+          .from('user_roles')
           .insert([
             {
-              id: signUpData.user.id,
-              nome: 'Mateus Pinto',
-              email: adminEmail,
+              user_id: signUpData.user.id,
+              role: 'admin',
             }
           ]);
 
-        if (userInsertError) {
-          console.error('Erro ao inserir admin na tabela usuarios:', userInsertError);
+        if (roleError) {
+          console.error('Erro ao atribuir role admin:', roleError);
         }
 
-        // O trigger já deve ter criado o role admin automaticamente
         return { success: true, user: signUpData.user };
       }
     }

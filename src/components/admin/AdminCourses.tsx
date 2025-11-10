@@ -11,10 +11,9 @@ import CourseDetails from './CourseDetails';
 
 interface Course {
   id: string;
-  nome: string;
+  titulo: string;
   descricao: string | null;
   ativo: boolean;
-  ordem: number;
   created_at: string;
   _count?: {
     modules: number;
@@ -39,7 +38,7 @@ const AdminCourses = () => {
       const { data: coursesData, error } = await supabase
         .from('courses')
         .select('*')
-        .order('ordem');
+        .order('created_at');
 
       if (error) throw error;
 
@@ -48,7 +47,7 @@ const AdminCourses = () => {
         (coursesData || []).map(async (course) => {
           const [modulesResult, slidesResult, questionsResult] = await Promise.all([
             supabase
-              .from('course_modules')
+              .from('modules')
               .select('id', { count: 'exact' })
               .eq('course_id', course.id),
             supabase
@@ -187,7 +186,7 @@ const AdminCourses = () => {
                   <div className="flex-1">
                     <div className="flex items-center gap-3">
                       <CardTitle className="text-lg font-opensans">
-                        {course.nome}
+                        {course.titulo}
                       </CardTitle>
                       <Badge variant={course.ativo ? "default" : "secondary"}>
                         {course.ativo ? 'Ativo' : 'Inativo'}

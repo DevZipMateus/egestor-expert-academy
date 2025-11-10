@@ -10,15 +10,14 @@ import ModuleForm from './ModuleForm';
 
 interface Course {
   id: string;
-  nome: string;
+  titulo: string;
   descricao: string | null;
   ativo: boolean;
-  ordem: number;
 }
 
 interface Module {
   id: string;
-  nome: string;
+  titulo: string;
   descricao: string | null;
   ordem: number;
   ativo: boolean;
@@ -47,7 +46,7 @@ const CourseDetails = ({ course, onBack }: CourseDetailsProps) => {
   const fetchModules = async () => {
     try {
       const { data: modulesData, error } = await supabase
-        .from('course_modules')
+        .from('modules')
         .select('*')
         .eq('course_id', course.id)
         .order('ordem');
@@ -63,9 +62,19 @@ const CourseDetails = ({ course, onBack }: CourseDetailsProps) => {
               .select('id', { count: 'exact' })
               .eq('module_id', module.id),
             supabase
-              .from('questions')
-              .select('id', { count: 'exact' })
+              .from('slides')
+              .select('id')
               .eq('module_id', module.id)
+              .then(async (slideResult) => {
+                if (slideResult.data) {
+                  const slideIds = slideResult.data.map(s => s.id);
+                  return supabase
+                    .from('questions')
+                    .select('id', { count: 'exact' })
+                    .in('slide_id', slideIds);
+                }
+                return { count: 0 };
+              })
           ]);
 
           return {
@@ -104,7 +113,7 @@ const CourseDetails = ({ course, onBack }: CourseDetailsProps) => {
 
     try {
       const { error } = await supabase
-        .from('course_modules')
+        .from('modules')
         .delete()
         .eq('id', moduleId);
 
@@ -168,7 +177,7 @@ const CourseDetails = ({ course, onBack }: CourseDetailsProps) => {
           </Button>
           <div>
             <h3 className="text-lg font-semibold font-roboto" style={{ color: '#52555b' }}>
-              {course.nome}
+              {course.titulo}
             </h3>
             <p className="text-sm text-gray-600 font-opensans">{course.descricao}</p>
           </div>
@@ -214,7 +223,7 @@ const CourseDetails = ({ course, onBack }: CourseDetailsProps) => {
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
                         <CardTitle className="text-base font-opensans">
-                          {module.nome}
+                          {module.titulo}
                         </CardTitle>
                         <Badge variant={module.ativo ? "default" : "secondary"}>
                           {module.ativo ? 'Ativo' : 'Inativo'}

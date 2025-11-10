@@ -16,9 +16,8 @@ interface CourseFormProps {
 }
 
 const CourseForm = ({ courseId, onSave, onCancel }: CourseFormProps) => {
-  const [nome, setNome] = useState('');
+  const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
-  const [ordem, setOrdem] = useState(1);
   const [ativo, setAtivo] = useState(true);
   const [loading, setLoading] = useState(false);
 
@@ -38,9 +37,8 @@ const CourseForm = ({ courseId, onSave, onCancel }: CourseFormProps) => {
 
       if (error) throw error;
 
-      setNome(course.nome);
+      setTitulo(course.titulo);
       setDescricao(course.descricao || '');
-      setOrdem(course.ordem);
       setAtivo(course.ativo);
     } catch (error) {
       console.error('Erro ao carregar curso:', error);
@@ -49,8 +47,8 @@ const CourseForm = ({ courseId, onSave, onCancel }: CourseFormProps) => {
   };
 
   const handleSave = async () => {
-    if (!nome.trim()) {
-      toast.error('Por favor, insira o nome do curso');
+    if (!titulo.trim()) {
+      toast.error('Por favor, insira o título do curso');
       return;
     }
 
@@ -61,9 +59,8 @@ const CourseForm = ({ courseId, onSave, onCancel }: CourseFormProps) => {
         const { error } = await supabase
           .from('courses')
           .update({
-            nome,
+            titulo,
             descricao,
-            ordem,
             ativo,
             updated_at: new Date().toISOString()
           })
@@ -75,9 +72,8 @@ const CourseForm = ({ courseId, onSave, onCancel }: CourseFormProps) => {
         const { error } = await supabase
           .from('courses')
           .insert({
-            nome,
+            titulo,
             descricao,
-            ordem,
             ativo
           });
 
@@ -113,12 +109,12 @@ const CourseForm = ({ courseId, onSave, onCancel }: CourseFormProps) => {
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">
-          <Label htmlFor="nome">Nome do Curso</Label>
+          <Label htmlFor="titulo">Título do Curso</Label>
           <Input
-            id="nome"
-            placeholder="Digite o nome do curso..."
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
+            id="titulo"
+            placeholder="Digite o título do curso..."
+            value={titulo}
+            onChange={(e) => setTitulo(e.target.value)}
           />
         </div>
 
@@ -130,17 +126,6 @@ const CourseForm = ({ courseId, onSave, onCancel }: CourseFormProps) => {
             value={descricao}
             onChange={(e) => setDescricao(e.target.value)}
             className="min-h-[100px]"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="ordem">Ordem de Apresentação</Label>
-          <Input
-            id="ordem"
-            type="number"
-            min="1"
-            value={ordem}
-            onChange={(e) => setOrdem(parseInt(e.target.value) || 1)}
           />
         </div>
 
