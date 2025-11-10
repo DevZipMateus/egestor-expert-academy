@@ -12,26 +12,37 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // Check for session
+        console.log('[AuthCallback] Processing magic link callback...');
+        
+        // Wait for Supabase to process URL tokens (hash fragments)
+        // The SDK needs time to extract and process tokens from the URL
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        console.log('[AuthCallback] Checking session after delay...');
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
+        console.log('[AuthCallback] Session:', session ? 'Found' : 'Not found');
+        console.log('[AuthCallback] Session error:', sessionError);
+        
         if (sessionError) {
-          console.error('Session error:', sessionError);
+          console.error('[AuthCallback] Session error:', sessionError);
           setError('link-invalid');
           setLoading(false);
           return;
         }
 
         if (session?.user) {
+          console.log('[AuthCallback] User authenticated:', session.user.email);
           // Successfully authenticated, redirect to introducao
           navigate('/introducao', { replace: true });
         } else {
+          console.warn('[AuthCallback] No session found after processing');
           // No session found, link might be invalid or expired
           setError('link-invalid');
           setLoading(false);
         }
       } catch (err) {
-        console.error('Callback error:', err);
+        console.error('[AuthCallback] Callback error:', err);
         setError('general');
         setLoading(false);
       }
