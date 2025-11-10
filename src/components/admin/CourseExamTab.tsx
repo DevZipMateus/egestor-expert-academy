@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, FileCheck, Settings, GripVertical } from 'lucide-react';
+import { Plus, Edit, Trash2, FileCheck, Settings, GripVertical, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import ExamQuestionForm from './ExamQuestionForm';
 import { Input } from '@/components/ui/input';
@@ -26,6 +26,14 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import ExamSlide from '@/components/ExamSlide';
 
 interface Exam {
   id: string;
@@ -117,6 +125,7 @@ const CourseExamTab = ({ courseId }: CourseExamTabProps) => {
   const [showQuestionForm, setShowQuestionForm] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<string | null>(null);
   const [showExamSettings, setShowExamSettings] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [examFormData, setExamFormData] = useState({
     titulo: '',
     descricao: '',
@@ -289,6 +298,49 @@ const CourseExamTab = ({ courseId }: CourseExamTabProps) => {
     }
   };
 
+  const getExamQuestionsForPreview = async () => {
+    if (!exam) return [];
+
+    try {
+      const { data: examQuestions, error } = await supabase
+        .from('exam_questions')
+        .select(`
+          id,
+          pergunta,
+          ordem,
+          exam_question_options (
+            id,
+            texto,
+            correta,
+            ordem
+          )
+        `)
+        .eq('exam_id', exam.id)
+        .order('ordem', { ascending: true });
+
+      if (error) throw error;
+
+      return examQuestions.map((q: any) => ({
+        id: q.id,
+        question: q.pergunta,
+        options: q.exam_question_options
+          .sort((a: any, b: any) => a.ordem - b.ordem)
+          .map((opt: any) => ({
+            text: opt.texto,
+            correct: opt.correta
+          }))
+      }));
+    } catch (error) {
+      console.error('Erro ao buscar perguntas:', error);
+      toast.error('Erro ao carregar perguntas para pré-visualização');
+      return [];
+    }
+  };
+
+  const handlePreviewComplete = (score: number, passed: boolean, answers: any[]) => {
+    toast.info(`Pré-visualização concluída. Nota: ${score}% - ${passed ? 'Aprovado' : 'Reprovado'}`);
+  };
+
   if (loading) return <div>Carregando exame...</div>;
 
   if (showQuestionForm && exam) {
@@ -387,6 +439,15 @@ const CourseExamTab = ({ courseId }: CourseExamTabProps) => {
               <Badge variant={exam.ativo ? "default" : "secondary"}>
                 {exam.ativo ? 'Ativo' : 'Inativo'}
               </Badge>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowPreview(true)}
+                disabled={questions.length === 0}
+              >
+                <Eye className="w-4 h-4 mr-1" />
+                Pré-visualizar
+              </Button>
               <Button
                 size="sm"
                 variant="outline"
@@ -520,6 +581,26 @@ const CourseExamTab = ({ courseId }: CourseExamTabProps) => {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Pré-visualização do Exame</DialogTitle>
+            <DialogDescription>
+              Esta é uma pré-visualização de como o exame aparecerá para os alunos. As respostas não serão salvas.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4">
+            {exam && (
+              <ExamSlide
+                title={exam.titulo}
+                getExamQuestions={getExamQuestionsForPreview}
+                onExamComplete={handlePreviewComplete}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
