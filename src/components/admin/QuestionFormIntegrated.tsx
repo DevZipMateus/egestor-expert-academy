@@ -214,14 +214,14 @@ const QuestionFormIntegrated = ({ moduleId, courseId, questionId, onSave, onCanc
           <div>
             <Label htmlFor="slide_id">Vincular ao Slide (opcional)</Label>
             <Select
-              value={formData.slide_id || "none"}
-              onValueChange={(value) => setFormData({ ...formData, slide_id: value === "none" ? "" : value })}
+              value={formData.slide_id}
+              onValueChange={(value) => setFormData({ ...formData, slide_id: value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione um slide" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Nenhum slide</SelectItem>
+                <SelectItem value="">Nenhum slide</SelectItem>
                 {slides.map((slide) => (
                   <SelectItem key={slide.id} value={slide.id.toString()}>
                     {slide.ordem}. {slide.titulo}
