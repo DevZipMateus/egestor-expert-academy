@@ -1,0 +1,95 @@
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Loader2, AlertCircle } from 'lucide-react';
+
+export default function AuthCallback() {
+  const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const handleCallback = async () => {
+      try {
+        // Check for session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          setError('link-invalid');
+          setLoading(false);
+          return;
+        }
+
+        if (session?.user) {
+          // Successfully authenticated, redirect to introducao
+          navigate('/introducao', { replace: true });
+        } else {
+          // No session found, link might be invalid or expired
+          setError('link-invalid');
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Callback error:', err);
+        setError('general');
+        setLoading(false);
+      }
+    };
+
+    handleCallback();
+  }, [navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[hsl(0,0%,95%)]">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-[hsl(4,86%,55%)] animate-spin mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-[hsl(0,0%,25%)] mb-2">
+            Confirmando seu acesso...
+          </h1>
+          <p className="text-[hsl(0,0%,45%)]">Por favor, aguarde</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[hsl(0,0%,95%)] px-4">
+        <div className="max-w-md w-full text-center">
+          <AlertCircle className="w-16 h-16 text-[hsl(4,86%,55%)] mx-auto mb-4" />
+          
+          {error === 'link-invalid' ? (
+            <>
+              <h1 className="text-2xl font-bold text-[hsl(0,0%,25%)] mb-2">
+                Link inválido ou expirado
+              </h1>
+              <p className="text-[hsl(0,0%,45%)] mb-6">
+                Este link de acesso expirou ou já foi utilizado. Solicite um novo link de acesso e aguarde pelo menos 30 segundos antes de tentar reenviar.
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-2xl font-bold text-[hsl(0,0%,25%)] mb-2">
+                Erro ao confirmar acesso
+              </h1>
+              <p className="text-[hsl(0,0%,45%)] mb-6">
+                Ocorreu um erro ao processar seu acesso. Por favor, tente novamente.
+              </p>
+            </>
+          )}
+          
+          <Button
+            onClick={() => navigate('/auth')}
+            className="bg-[hsl(4,86%,55%)] hover:bg-[hsl(4,86%,45%)] text-white"
+          >
+            Voltar para o login
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}

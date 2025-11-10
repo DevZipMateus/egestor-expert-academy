@@ -7,11 +7,14 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Menu, Settings } from 'lucide-react';
 
+const RESEND_COOLDOWN = 30; // seconds
+
 export default function Auth() {
   const [email, setEmail] = useState('');
   const [nome, setNome] = useState('');
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
   const { signInWithMagicLink, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -20,6 +23,35 @@ export default function Auth() {
       navigate('/introducao');
     }
   }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    // Check for existing cooldown
+    const nextSendAt = localStorage.getItem('next_send_at');
+    if (nextSendAt) {
+      const remaining = Math.max(0, Math.floor((parseInt(nextSendAt) - Date.now()) / 1000));
+      if (remaining > 0) {
+        setCooldownRemaining(remaining);
+      } else {
+        localStorage.removeItem('next_send_at');
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (cooldownRemaining > 0) {
+      const timer = setInterval(() => {
+        setCooldownRemaining((prev) => {
+          const newValue = prev - 1;
+          if (newValue <= 0) {
+            localStorage.removeItem('next_send_at');
+            return 0;
+          }
+          return newValue;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [cooldownRemaining]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,9 +66,21 @@ export default function Auth() {
     const { error } = await signInWithMagicLink(email, nome);
     
     if (error) {
-      toast.error('Erro ao enviar link: ' + error.message);
+      const errorMessage = error.message || '';
+      
+      if (errorMessage.includes('only request this') || errorMessage.includes('rate_limit')) {
+        toast.error('Aguarde 30 segundos para reenviar o link');
+        const nextSendTime = Date.now() + RESEND_COOLDOWN * 1000;
+        localStorage.setItem('next_send_at', nextSendTime.toString());
+        setCooldownRemaining(RESEND_COOLDOWN);
+      } else {
+        toast.error('Erro ao enviar link. Tente novamente em alguns instantes.');
+      }
     } else {
       setEmailSent(true);
+      const nextSendTime = Date.now() + RESEND_COOLDOWN * 1000;
+      localStorage.setItem('next_send_at', nextSendTime.toString());
+      setCooldownRemaining(RESEND_COOLDOWN);
       toast.success(`Link de acesso enviado para ${email}!`);
     }
     
@@ -98,10 +142,10 @@ export default function Auth() {
                   <div className="pt-8">
                     <Button 
                       type="submit" 
-                      disabled={loading}
-                      className="bg-[hsl(4,86%,55%)] hover:bg-[hsl(4,86%,45%)] text-white px-8 py-6 text-base font-medium"
+                      disabled={loading || cooldownRemaining > 0}
+                      className="bg-[hsl(4,86%,55%)] hover:bg-[hsl(4,86%,45%)] text-white px-8 py-6 text-base font-medium disabled:opacity-50"
                     >
-                      {loading ? 'Aguarde...' : 'Começar'}
+                      {loading ? 'Aguarde...' : cooldownRemaining > 0 ? `Aguarde ${cooldownRemaining}s` : 'Começar'}
                     </Button>
                   </div>
                 </form>
@@ -119,7 +163,11 @@ export default function Auth() {
                   Clique no link para acessar a plataforma
                 </p>
                 <Button
-                  onClick={() => setEmailSent(false)}
+                  onClick={() => {
+                    setEmailSent(false);
+                    setCooldownRemaining(0);
+                    localStorage.removeItem('next_send_at');
+                  }}
                   variant="outline"
                   className="border-[hsl(0,0%,70%)] text-[hsl(0,0%,45%)] hover:bg-[hsl(0,0%,95%)]"
                 >

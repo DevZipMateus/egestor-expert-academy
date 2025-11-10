@@ -36,30 +36,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
-
-        // Create/update profile when user signs in via magic link
-        if (event === 'SIGNED_IN' && session?.user) {
-          const storedName = localStorage.getItem('pending_user_name');
-          if (storedName) {
-            setTimeout(async () => {
-              try {
-                await supabase.from('profiles').upsert({
-                  id: session.user.id,
-                  email: session.user.email!,
-                  nome: storedName,
-                  updated_at: new Date().toISOString(),
-                });
-                localStorage.removeItem('pending_user_name');
-              } catch (error) {
-                console.error('Error creating profile:', error);
-              }
-            }, 0);
-          }
-        }
       }
     );
 
@@ -74,15 +54,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signInWithMagicLink = async (email: string, nome: string) => {
-    const redirectUrl = `${window.location.origin}/introducao`;
-    
-    // Store name temporarily to create profile after magic link callback
-    localStorage.setItem('pending_user_name', nome);
+    const redirectUrl = `${window.location.origin}/auth/callback`;
     
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
         emailRedirectTo: redirectUrl,
+        data: { nome },
       }
     });
     return { error };
