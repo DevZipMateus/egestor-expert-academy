@@ -19,9 +19,9 @@ const AdminAnalytics = () => {
 
   const fetchAnalytics = async () => {
     try {
-      // Total de usuários
+      // Total de usuários (agora profiles)
       const { count: usersCount } = await supabase
-        .from('usuarios')
+        .from('profiles')
         .select('*', { count: 'exact', head: true });
 
       // Total de slides

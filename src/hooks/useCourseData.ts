@@ -137,58 +137,10 @@ export const useCourseData = () => {
         return null;
       }
 
-      console.log('🔍 Verificando se usuário existe na tabela usuarios:', user.id);
-
-      // Verificar se o usuário existe na tabela usuarios
-      const { data: existingUser } = await supabase
-        .from('usuarios')
-        .select('id')
-        .eq('id', user.id)
-        .single();
-
-      if (existingUser) {
-        console.log('✅ Usuário encontrado na tabela usuarios');
-        return user.id;
-      }
-
-      console.log('⚠️ Usuário não encontrado na tabela usuarios, criando...');
-      
-      // Criar usuário na tabela usuarios se não existir
-      const { data: newUser, error: createError } = await supabase
-        .from('usuarios')
-        .insert([{
-          id: user.id,
-          nome: user.email || 'Usuário',
-          email: user.email || ''
-        }])
-        .select('id')
-        .single();
-
-      if (createError) {
-        console.error('❌ Erro ao criar usuário na tabela usuarios:', createError);
-        return null;
-      }
-
-      console.log('✅ Usuário criado na tabela usuarios');
-
-      // Criar progresso inicial se não existir
-      const { error: progressError } = await supabase
-        .from('progresso_usuario')
-        .insert([{
-          usuario_id: user.id,
-          aulas_assistidas: [],
-          progresso_percentual: 0
-        }]);
-
-      if (progressError && !progressError.message.includes('duplicate')) {
-        console.error('⚠️ Erro ao criar progresso inicial:', progressError);
-      } else {
-        console.log('✅ Progresso inicial criado');
-      }
-
+      console.log('✅ Usuário autenticado:', user.id);
       return user.id;
     } catch (error) {
-      console.error('💥 Erro crítico ao verificar/criar usuário:', error);
+      console.error('💥 Erro crítico ao verificar usuário:', error);
       return null;
     }
   };

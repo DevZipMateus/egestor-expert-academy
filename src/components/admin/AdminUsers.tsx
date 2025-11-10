@@ -32,13 +32,13 @@ const AdminUsers = () => {
 
   const fetchUsers = async () => {
     try {
-      // Buscar usuários da tabela usuarios
-      const { data: usuariosData, error: usuariosError } = await supabase
-        .from('usuarios')
+      // Buscar profiles (substituiu usuarios)
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (usuariosError) throw usuariosError;
+      if (profilesError) throw profilesError;
 
       // Buscar roles dos usuários
       const { data: rolesData, error: rolesError } = await supabase
@@ -50,20 +50,20 @@ const AdminUsers = () => {
       // Buscar progresso dos usuários
       const { data: progressoData, error: progressoError } = await supabase
         .from('progresso_usuario')
-        .select('usuario_id, ultima_aula, progresso_percentual');
+        .select('usuario_id, aulas_assistidas, progresso_percentual');
 
       if (progressoError) throw progressoError;
 
       // Combinar dados
-      const usersWithData = usuariosData?.map(user => {
+      const usersWithData = profilesData?.map(user => {
         const userRole = rolesData?.find(role => role.user_id === user.id);
         const userProgress = progressoData?.find(prog => prog.usuario_id === user.id);
         
         return {
           ...user,
-          role: userRole?.role || 'student',
+          role: userRole?.role || 'user',
           progresso: userProgress ? {
-            ultima_aula: userProgress.ultima_aula,
+            ultima_aula: userProgress.aulas_assistidas?.[userProgress.aulas_assistidas.length - 1] || 0,
             progresso_percentual: userProgress.progresso_percentual
           } : undefined
         };
@@ -74,7 +74,7 @@ const AdminUsers = () => {
       // Calcular estatísticas
       const totalUsers = usersWithData.length;
       const admins = usersWithData.filter(u => u.role === 'admin').length;
-      const students = usersWithData.filter(u => u.role === 'student').length;
+      const students = usersWithData.filter(u => u.role === 'user').length;
 
       setStats({ totalUsers, admins, students });
 
