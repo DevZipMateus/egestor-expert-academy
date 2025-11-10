@@ -8,6 +8,7 @@ import ExerciseSlide from "@/components/ExerciseSlide";
 import AttentionSlide from "@/components/AttentionSlide";
 import ExamSlide from "@/components/ExamSlide";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import CourseSidebar from "@/components/CourseSidebar";
 import SettingsDropdown from "@/components/SettingsDropdown";
@@ -16,7 +17,7 @@ import { useCourseData } from "@/hooks/useCourseData";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Curso = () => {
-  const { slide } = useParams();
+  const { courseId, slide } = useParams();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const [examScore, setExamScore] = useState<number | null>(null);
@@ -47,7 +48,41 @@ const Curso = () => {
       navigate('/login');
       return;
     }
-  }, [isAuthenticated, navigate]);
+
+    // Verificar se há curso pendente após login
+    const pendingCourseId = localStorage.getItem('pendingCourseId');
+    if (pendingCourseId && user) {
+      localStorage.removeItem('pendingCourseId');
+      // Inscrever usuário no curso se ainda não estiver inscrito
+      enrollUserInCourse(pendingCourseId, user.id);
+    }
+  }, [isAuthenticated, navigate, user]);
+
+  const enrollUserInCourse = async (courseId: string, userId: string) => {
+    try {
+      const { data: existingProgress } = await supabase
+        .from('progresso_usuario')
+        .select('id')
+        .eq('usuario_id', userId)
+        .eq('course_id', courseId)
+        .maybeSingle();
+
+      if (!existingProgress) {
+        await supabase
+          .from('progresso_usuario')
+          .insert({
+            usuario_id: userId,
+            course_id: courseId,
+            aulas_assistidas: [],
+            progresso_percentual: 0,
+            started_at: new Date().toISOString()
+          });
+        console.log('Usuário inscrito no curso com sucesso');
+      }
+    } catch (error) {
+      console.error('Erro ao inscrever usuário no curso:', error);
+    }
+  };
 
   // Reset navigation control when slide changes - usando dados persistidos
   useEffect(() => {
@@ -83,7 +118,7 @@ const Curso = () => {
 
   const goToPrevious = () => {
     if (currentSlide > 1) {
-      navigate(`/curso/${currentSlide - 1}`);
+      navigate(`/curso/${courseId}/${currentSlide - 1}`);
     } else {
       navigate('/dashboard');
     }
@@ -103,7 +138,7 @@ const Curso = () => {
     }
 
     if (currentSlide < totalSlides) {
-      navigate(`/curso/${currentSlide + 1}`);
+      navigate(`/curso/${courseId}/${currentSlide + 1}`);
     } else {
       if (examPassed) {
         navigate('/expert');
@@ -257,7 +292,7 @@ const Curso = () => {
   };
 
   if (!currentContent && !loading) {
-    navigate('/curso/1');
+    navigate(`/curso/${courseId}/1`);
     return null;
   }
 

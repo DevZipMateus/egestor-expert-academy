@@ -13,12 +13,14 @@ import ModuleSlides from './ModuleSlides';
 import ModuleQuestions from './ModuleQuestions';
 import CourseExamTab from './CourseExamTab';
 import CourseCertificatesTab from './CourseCertificatesTab';
+import CourseMetricsTab from './CourseMetricsTab';
 
 interface Course {
   id: string;
   titulo: string;
   descricao: string | null;
   ativo: boolean;
+  slug: string;
 }
 
 interface Module {
@@ -213,11 +215,12 @@ const CourseDetails = ({ course, onBack }: CourseDetailsProps) => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="modules">Módulos</TabsTrigger>
           <TabsTrigger value="exam">Exame Final</TabsTrigger>
           <TabsTrigger value="certificates">Certificados</TabsTrigger>
+          <TabsTrigger value="metrics">Métricas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-6">
@@ -342,6 +345,10 @@ const CourseDetails = ({ course, onBack }: CourseDetailsProps) => {
 
         <TabsContent value="certificates" className="mt-6">
           <CourseCertificatesTab courseId={course.id} />
+        </TabsContent>
+
+        <TabsContent value="metrics" className="mt-6">
+          <CourseMetricsTab courseId={course.id} />
         </TabsContent>
       </Tabs>
     </div>

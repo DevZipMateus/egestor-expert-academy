@@ -12,6 +12,7 @@ import AuthCallback from "./pages/AuthCallback";
 import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
 import Curso from "./pages/Curso";
+import CourseAccess from "./pages/CourseAccess";
 import Expert from "./pages/Expert";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
@@ -35,7 +36,8 @@ const App = () => (
             <Route path="/introducao" element={<Introducao />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/admin" element={<Admin />} />
-            <Route path="/curso/:slide" element={<Curso />} />
+            <Route path="/c/:courseSlug" element={<CourseAccess />} />
+            <Route path="/curso/:courseId/:slide" element={<Curso />} />
             <Route path="/expert" element={<Expert />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

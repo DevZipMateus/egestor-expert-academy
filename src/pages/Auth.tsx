@@ -20,7 +20,14 @@ export default function Auth() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/dashboard');
+      // Verificar se há curso pendente
+      const pendingCourseId = localStorage.getItem('pendingCourseId');
+      if (pendingCourseId) {
+        localStorage.removeItem('pendingCourseId');
+        navigate(`/curso/${pendingCourseId}/1`);
+      } else {
+        navigate('/dashboard');
+      }
     }
   }, [isAuthenticated, navigate]);
 

@@ -18,6 +18,7 @@ interface CourseFormProps {
 const CourseForm = ({ courseId, onSave, onCancel }: CourseFormProps) => {
   const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
+  const [slug, setSlug] = useState('');
   const [ativo, setAtivo] = useState(true);
   const [loading, setLoading] = useState(false);
 
@@ -39,6 +40,7 @@ const CourseForm = ({ courseId, onSave, onCancel }: CourseFormProps) => {
 
       setTitulo(course.titulo);
       setDescricao(course.descricao || '');
+      setSlug(course.slug || '');
       setAtivo(course.ativo);
     } catch (error) {
       console.error('Erro ao carregar curso:', error);
@@ -46,9 +48,32 @@ const CourseForm = ({ courseId, onSave, onCancel }: CourseFormProps) => {
     }
   };
 
+  const generateSlug = (text: string) => {
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  };
+
+  const handleTituloChange = (newTitulo: string) => {
+    setTitulo(newTitulo);
+    if (!courseId && !slug) {
+      setSlug(generateSlug(newTitulo));
+    }
+  };
+
   const handleSave = async () => {
     if (!titulo.trim()) {
       toast.error('Por favor, insira o título do curso');
+      return;
+    }
+
+    if (!slug.trim()) {
+      toast.error('Por favor, insira o slug do curso');
       return;
     }
 
@@ -61,6 +86,7 @@ const CourseForm = ({ courseId, onSave, onCancel }: CourseFormProps) => {
           .update({
             titulo,
             descricao,
+            slug,
             ativo,
             updated_at: new Date().toISOString()
           })
@@ -74,6 +100,7 @@ const CourseForm = ({ courseId, onSave, onCancel }: CourseFormProps) => {
           .insert({
             titulo,
             descricao,
+            slug,
             ativo
           });
 
@@ -114,8 +141,21 @@ const CourseForm = ({ courseId, onSave, onCancel }: CourseFormProps) => {
             id="titulo"
             placeholder="Digite o título do curso..."
             value={titulo}
-            onChange={(e) => setTitulo(e.target.value)}
+            onChange={(e) => handleTituloChange(e.target.value)}
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="slug">Slug (URL amigável)</Label>
+          <Input
+            id="slug"
+            placeholder="slug-do-curso"
+            value={slug}
+            onChange={(e) => setSlug(generateSlug(e.target.value))}
+          />
+          <p className="text-sm text-gray-500">
+            Link do curso: {window.location.origin}/c/{slug || 'slug-do-curso'}
+          </p>
         </div>
 
         <div className="space-y-2">

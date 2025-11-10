@@ -115,6 +115,7 @@ export type Database = {
           created_at: string | null
           descricao: string | null
           id: string
+          slug: string
           titulo: string
           updated_at: string | null
         }
@@ -123,6 +124,7 @@ export type Database = {
           created_at?: string | null
           descricao?: string | null
           id?: string
+          slug: string
           titulo: string
           updated_at?: string | null
         }
@@ -131,6 +133,7 @@ export type Database = {
           created_at?: string | null
           descricao?: string | null
           id?: string
+          slug?: string
           titulo?: string
           updated_at?: string | null
         }
@@ -315,29 +318,43 @@ export type Database = {
       progresso_usuario: {
         Row: {
           aulas_assistidas: number[] | null
+          course_id: string
           created_at: string | null
           data_atualizacao: string | null
           id: string
           progresso_percentual: number | null
+          started_at: string | null
           usuario_id: string
         }
         Insert: {
           aulas_assistidas?: number[] | null
+          course_id: string
           created_at?: string | null
           data_atualizacao?: string | null
           id?: string
           progresso_percentual?: number | null
+          started_at?: string | null
           usuario_id: string
         }
         Update: {
           aulas_assistidas?: number[] | null
+          course_id?: string
           created_at?: string | null
           data_atualizacao?: string | null
           id?: string
           progresso_percentual?: number | null
+          started_at?: string | null
           usuario_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "progresso_usuario_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       question_options: {
         Row: {

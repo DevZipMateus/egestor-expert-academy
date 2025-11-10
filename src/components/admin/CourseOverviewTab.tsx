@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Users, Video, HelpCircle, FileCheck, Award } from 'lucide-react';
+import CourseShareCard from './CourseShareCard';
 
 interface CourseOverviewTabProps {
   course: {
@@ -8,6 +9,7 @@ interface CourseOverviewTabProps {
     titulo: string;
     descricao: string | null;
     ativo: boolean;
+    slug: string;
   };
   stats: {
     totalModules: number;
@@ -43,6 +45,9 @@ const CourseOverviewTab = ({ course, stats }: CourseOverviewTabProps) => {
           )}
         </CardContent>
       </Card>
+
+      {/* Card de Compartilhamento */}
+      <CourseShareCard courseSlug={course.slug} />
 
       <div>
         <h3 className="text-lg font-semibold mb-4 font-roboto">Estatísticas</h3>

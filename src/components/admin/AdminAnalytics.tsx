@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3, Users, BookOpen, TrendingUp } from 'lucide-react';
 
+
 const AdminAnalytics = () => {
   const [analytics, setAnalytics] = useState({
     totalUsers: 0,
@@ -11,11 +12,57 @@ const AdminAnalytics = () => {
     averageProgress: 0,
     activeUsers: 0
   });
+  const [courseMetrics, setCourseMetrics] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchAnalytics();
+    fetchCourseMetrics();
   }, []);
+
+  const fetchCourseMetrics = async () => {
+    try {
+      const { data: courses, error: coursesError } = await supabase
+        .from('courses')
+        .select('id, titulo, slug')
+        .eq('ativo', true);
+
+      if (coursesError) {
+        console.error('Erro ao buscar cursos:', coursesError);
+        return;
+      }
+
+      const metricsPromises = courses.map(async (course) => {
+        const { count: enrolledCount } = await supabase
+          .from('progresso_usuario')
+          .select('*', { count: 'exact', head: true })
+          .eq('course_id', course.id);
+
+        const { data: progressData } = await supabase
+          .from('progresso_usuario')
+          .select('progresso_percentual')
+          .eq('course_id', course.id);
+
+        const completedCount = progressData?.filter(p => p.progresso_percentual >= 100).length || 0;
+        const completionRate = enrolledCount && enrolledCount > 0 
+          ? Math.round((completedCount / enrolledCount) * 100)
+          : 0;
+
+        return {
+          id: course.id,
+          titulo: course.titulo,
+          slug: course.slug,
+          enrolled: enrolledCount || 0,
+          completionRate
+        };
+      });
+
+      const metrics = await Promise.all(metricsPromises);
+      setCourseMetrics(metrics);
+    } catch (error) {
+      console.error('Erro ao buscar métricas dos cursos:', error);
+    }
+  };
 
   const fetchAnalytics = async () => {
     try {
@@ -131,6 +178,36 @@ const AdminAnalytics = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Métricas por Curso */}
+      {courseMetrics.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Métricas por Curso</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {courseMetrics.map((course) => (
+                <Card key={course.id} className="border-2">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">{course.titulo}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Alunos Inscritos</span>
+                      <span className="text-lg font-bold text-blue-600">{course.enrolled}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Taxa de Conclusão</span>
+                      <span className="text-lg font-bold text-green-600">{course.completionRate}%</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

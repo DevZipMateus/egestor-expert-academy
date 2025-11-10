@@ -14,6 +14,7 @@ interface Course {
   titulo: string;
   descricao: string | null;
   ativo: boolean;
+  slug: string;
   created_at: string;
   _count?: {
     modules: number;
