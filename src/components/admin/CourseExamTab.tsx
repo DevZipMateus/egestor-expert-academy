@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, FileCheck, Settings, GripVertical, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, FileCheck, Settings, GripVertical, Eye, TrendingUp, Users, Clock, Award } from 'lucide-react';
 import { toast } from 'sonner';
 import ExamQuestionForm from './ExamQuestionForm';
 import { Input } from '@/components/ui/input';
@@ -48,6 +48,13 @@ interface ExamQuestion {
   id: string;
   pergunta: string;
   ordem: number;
+}
+
+interface ExamStats {
+  totalAttempts: number;
+  averageScore: number;
+  passRate: number;
+  averageTimeMinutes: number;
 }
 
 interface SortableQuestionItemProps {
@@ -126,6 +133,8 @@ const CourseExamTab = ({ courseId }: CourseExamTabProps) => {
   const [editingQuestion, setEditingQuestion] = useState<string | null>(null);
   const [showExamSettings, setShowExamSettings] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [stats, setStats] = useState<ExamStats | null>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
   const [examFormData, setExamFormData] = useState({
     titulo: '',
     descricao: '',
@@ -143,6 +152,12 @@ const CourseExamTab = ({ courseId }: CourseExamTabProps) => {
   useEffect(() => {
     fetchExamData();
   }, [courseId]);
+
+  useEffect(() => {
+    if (exam) {
+      fetchExamStats();
+    }
+  }, [exam]);
 
   const fetchExamData = async () => {
     try {
@@ -337,6 +352,70 @@ const CourseExamTab = ({ courseId }: CourseExamTabProps) => {
     }
   };
 
+  const fetchExamStats = async () => {
+    if (!exam) return;
+
+    setLoadingStats(true);
+    try {
+      const { data: attempts, error } = await supabase
+        .from('exam_attempts')
+        .select('score, passed, created_at, completed_at')
+        .eq('exam_id', exam.id);
+
+      if (error) throw error;
+
+      if (!attempts || attempts.length === 0) {
+        setStats({
+          totalAttempts: 0,
+          averageScore: 0,
+          passRate: 0,
+          averageTimeMinutes: 0,
+        });
+        return;
+      }
+
+      const totalAttempts = attempts.length;
+      const totalScore = attempts.reduce((sum, attempt) => sum + attempt.score, 0);
+      const averageScore = Math.round(totalScore / totalAttempts);
+      const passedAttempts = attempts.filter(attempt => attempt.passed).length;
+      const passRate = Math.round((passedAttempts / totalAttempts) * 100);
+
+      // Calcular tempo médio de conclusão
+      let totalTimeMinutes = 0;
+      let validTimings = 0;
+
+      attempts.forEach(attempt => {
+        if (attempt.created_at && attempt.completed_at) {
+          const startTime = new Date(attempt.created_at).getTime();
+          const endTime = new Date(attempt.completed_at).getTime();
+          const durationMinutes = (endTime - startTime) / (1000 * 60);
+          
+          // Ignorar durações anormais (mais de 3 horas ou negativas)
+          if (durationMinutes > 0 && durationMinutes < 180) {
+            totalTimeMinutes += durationMinutes;
+            validTimings++;
+          }
+        }
+      });
+
+      const averageTimeMinutes = validTimings > 0 
+        ? Math.round(totalTimeMinutes / validTimings) 
+        : 0;
+
+      setStats({
+        totalAttempts,
+        averageScore,
+        passRate,
+        averageTimeMinutes,
+      });
+    } catch (error) {
+      console.error('Erro ao buscar estatísticas:', error);
+      toast.error('Erro ao carregar estatísticas do exame');
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
   const handlePreviewComplete = (score: number, passed: boolean, answers: any[]) => {
     toast.info(`Pré-visualização concluída. Nota: ${score}% - ${passed ? 'Aprovado' : 'Reprovado'}`);
   };
@@ -473,6 +552,67 @@ const CourseExamTab = ({ courseId }: CourseExamTabProps) => {
             <span>Nota mínima: <strong>{exam.passing_score}%</strong></span>
             <span>Total de perguntas: <strong>{questions.length}</strong></span>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Estatísticas do Exame */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <TrendingUp className="w-5 h-5" />
+            Estatísticas do Exame
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loadingStats ? (
+            <div className="text-sm text-muted-foreground">Carregando estatísticas...</div>
+          ) : stats && stats.totalAttempts > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100">Total de Tentativas</h4>
+                </div>
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.totalAttempts}</p>
+              </div>
+
+              <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
+                  <h4 className="text-sm font-medium text-green-900 dark:text-green-100">Média de Notas</h4>
+                </div>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.averageScore}%</p>
+              </div>
+
+              <div className="bg-purple-50 dark:bg-purple-950/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
+                <div className="flex items-center gap-2 mb-2">
+                  <Award className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                  <h4 className="text-sm font-medium text-purple-900 dark:text-purple-100">Taxa de Aprovação</h4>
+                </div>
+                <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{stats.passRate}%</p>
+              </div>
+
+              <div className="bg-orange-50 dark:bg-orange-950/20 rounded-lg p-4 border border-orange-200 dark:border-orange-800">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                  <h4 className="text-sm font-medium text-orange-900 dark:text-orange-100">Tempo Médio</h4>
+                </div>
+                <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                  {stats.averageTimeMinutes > 0 ? `${stats.averageTimeMinutes} min` : 'N/A'}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <TrendingUp className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+              <p className="text-sm text-muted-foreground">
+                Nenhuma tentativa de exame registrada ainda.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                As estatísticas aparecerão quando os alunos começarem a fazer o exame.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
