@@ -2,9 +2,26 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Edit, Trash2, Video, FileText, AlertCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, Video, FileText, AlertCircle, GripVertical } from 'lucide-react';
 import { toast } from 'sonner';
 import SlideForm from './SlideForm';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface Slide {
   id: number;
@@ -16,6 +33,74 @@ interface Slide {
   conteudo: string | null;
 }
 
+interface SortableSlideItemProps {
+  slide: Slide;
+  onEdit: () => void;
+  onDelete: () => void;
+  getSlideIcon: (tipo: string) => JSX.Element;
+  getSlideTypeLabel: (tipo: string) => string;
+}
+
+const SortableSlideItem = ({ slide, onEdit, onDelete, getSlideIcon, getSlideTypeLabel }: SortableSlideItemProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: slide.id.toString() });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <Card ref={setNodeRef} style={style} className="hover:bg-muted/50 transition-colors">
+      <CardContent className="py-3 px-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 flex-1">
+            <div
+              {...attributes}
+              {...listeners}
+              className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
+            >
+              <GripVertical className="w-4 h-4 text-muted-foreground" />
+            </div>
+            {getSlideIcon(slide.tipo)}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{slide.titulo}</p>
+              <p className="text-xs text-muted-foreground">
+                {getSlideTypeLabel(slide.tipo)} · Ordem: {slide.ordem}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onEdit}
+              className="h-8 w-8 p-0"
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onDelete}
+              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 interface ModuleSlidesProps {
   moduleId: string;
   courseId: string;
@@ -26,6 +111,13 @@ const ModuleSlides = ({ moduleId, courseId }: ModuleSlidesProps) => {
   const [loading, setLoading] = useState(true);
   const [showSlideForm, setShowSlideForm] = useState(false);
   const [editingSlide, setEditingSlide] = useState<number | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     fetchSlides();
@@ -74,6 +166,35 @@ const ModuleSlides = ({ moduleId, courseId }: ModuleSlidesProps) => {
     } catch (error) {
       console.error('Erro ao excluir slide:', error);
       toast.error('Erro ao excluir slide');
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = slides.findIndex(s => s.id.toString() === active.id);
+    const newIndex = slides.findIndex(s => s.id.toString() === over.id);
+
+    const newSlides = arrayMove(slides, oldIndex, newIndex);
+    setSlides(newSlides);
+
+    // Atualizar ordens no banco de dados
+    try {
+      const updates = newSlides.map((slide, index) => 
+        supabase
+          .from('slides')
+          .update({ ordem: index + 1 })
+          .eq('id', slide.id)
+      );
+
+      await Promise.all(updates);
+      toast.success('Ordem atualizada!');
+    } catch (error) {
+      console.error('Erro ao atualizar ordem:', error);
+      toast.error('Erro ao atualizar ordem');
+      fetchSlides();
     }
   };
 
@@ -147,43 +268,29 @@ const ModuleSlides = ({ moduleId, courseId }: ModuleSlidesProps) => {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-2">
-          {slides.map((slide) => (
-            <Card key={slide.id} className="hover:bg-muted/50 transition-colors">
-              <CardContent className="py-3 px-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 flex-1">
-                    {getSlideIcon(slide.tipo)}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{slide.titulo}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {getSlideTypeLabel(slide.tipo)} · Ordem: {slide.ordem}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEditSlide(slide.id)}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteSlide(slide.id)}
-                      className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={slides.map(s => s.id.toString())}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-2">
+              {slides.map((slide) => (
+                <SortableSlideItem
+                  key={slide.id}
+                  slide={slide}
+                  onEdit={() => handleEditSlide(slide.id)}
+                  onDelete={() => handleDeleteSlide(slide.id)}
+                  getSlideIcon={getSlideIcon}
+                  getSlideTypeLabel={getSlideTypeLabel}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
     </div>
   );

@@ -3,12 +3,29 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, FileCheck, Settings } from 'lucide-react';
+import { Plus, Edit, Trash2, FileCheck, Settings, GripVertical } from 'lucide-react';
 import { toast } from 'sonner';
 import ExamQuestionForm from './ExamQuestionForm';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface Exam {
   id: string;
@@ -24,6 +41,70 @@ interface ExamQuestion {
   pergunta: string;
   ordem: number;
 }
+
+interface SortableQuestionItemProps {
+  question: ExamQuestion;
+  onEdit: () => void;
+  onDelete: () => void;
+}
+
+const SortableQuestionItem = ({ question, onEdit, onDelete }: SortableQuestionItemProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: question.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <Card ref={setNodeRef} style={style} className="hover:bg-muted/50">
+      <CardContent className="py-3 px-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2 flex-1">
+            <div
+              {...attributes}
+              {...listeners}
+              className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
+            >
+              <GripVertical className="w-4 h-4 text-muted-foreground" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium">
+                {question.ordem}. {question.pergunta}
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onEdit}
+              className="h-8 w-8 p-0"
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onDelete}
+              className="h-8 w-8 p-0 text-destructive"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
 interface CourseExamTabProps {
   courseId: string;
@@ -42,6 +123,13 @@ const CourseExamTab = ({ courseId }: CourseExamTabProps) => {
     passing_score: 80,
     ativo: true,
   });
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     fetchExamData();
@@ -152,6 +240,55 @@ const CourseExamTab = ({ courseId }: CourseExamTabProps) => {
     }
   };
 
+  const handleDeleteExam = async () => {
+    if (!exam) return;
+    if (!confirm('Tem certeza que deseja excluir este exame? Todas as perguntas e tentativas serão perdidas.')) return;
+
+    try {
+      const { error } = await supabase
+        .from('course_exams')
+        .delete()
+        .eq('id', exam.id);
+
+      if (error) throw error;
+      toast.success('Exame excluído com sucesso!');
+      setExam(null);
+      setQuestions([]);
+    } catch (error) {
+      console.error('Erro ao excluir exame:', error);
+      toast.error('Erro ao excluir exame');
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = questions.findIndex(q => q.id === active.id);
+    const newIndex = questions.findIndex(q => q.id === over.id);
+
+    const newQuestions = arrayMove(questions, oldIndex, newIndex);
+    setQuestions(newQuestions);
+
+    // Atualizar ordens no banco de dados
+    try {
+      const updates = newQuestions.map((question, index) => 
+        supabase
+          .from('exam_questions')
+          .update({ ordem: index + 1 })
+          .eq('id', question.id)
+      );
+
+      await Promise.all(updates);
+      toast.success('Ordem atualizada!');
+    } catch (error) {
+      console.error('Erro ao atualizar ordem:', error);
+      toast.error('Erro ao atualizar ordem');
+      fetchExamData();
+    }
+  };
+
   if (loading) return <div>Carregando exame...</div>;
 
   if (showQuestionForm && exam) {
@@ -258,6 +395,14 @@ const CourseExamTab = ({ courseId }: CourseExamTabProps) => {
                 <Settings className="w-4 h-4 mr-1" />
                 Configurações
               </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={handleDeleteExam}
+              >
+                <Trash2 className="w-4 h-4 mr-1" />
+                Excluir Exame
+              </Button>
             </div>
           </div>
         </CardHeader>
@@ -348,42 +493,30 @@ const CourseExamTab = ({ courseId }: CourseExamTabProps) => {
               </Button>
             </div>
           ) : (
-            <div className="space-y-2">
-              {questions.map((question) => (
-                <Card key={question.id} className="hover:bg-muted/50">
-                  <CardContent className="py-3 px-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">
-                          {question.ordem}. {question.pergunta}
-                        </p>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setEditingQuestion(question.id);
-                            setShowQuestionForm(true);
-                          }}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteQuestion(question.id)}
-                          className="h-8 w-8 p-0 text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={questions.map(q => q.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-2">
+                  {questions.map((question) => (
+                    <SortableQuestionItem
+                      key={question.id}
+                      question={question}
+                      onEdit={() => {
+                        setEditingQuestion(question.id);
+                        setShowQuestionForm(true);
+                      }}
+                      onDelete={() => handleDeleteQuestion(question.id)}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
           )}
         </CardContent>
       </Card>
