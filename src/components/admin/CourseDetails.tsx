@@ -11,7 +11,6 @@ import ModuleForm from './ModuleForm';
 import CourseOverviewTab from './CourseOverviewTab';
 import ModuleSlides from './ModuleSlides';
 import ModuleQuestions from './ModuleQuestions';
-import CourseExamTab from './CourseExamTab';
 import CourseCertificatesTab from './CourseCertificatesTab';
 import CourseMetricsTab from './CourseMetricsTab';
 
@@ -215,10 +214,9 @@ const CourseDetails = ({ course, onBack }: CourseDetailsProps) => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="modules">Módulos</TabsTrigger>
-          <TabsTrigger value="exam">Exame Final</TabsTrigger>
           <TabsTrigger value="certificates">Certificados</TabsTrigger>
           <TabsTrigger value="metrics">Métricas</TabsTrigger>
         </TabsList>
@@ -337,10 +335,6 @@ const CourseDetails = ({ course, onBack }: CourseDetailsProps) => {
               </div>
             )}
           </div>
-        </TabsContent>
-
-        <TabsContent value="exam" className="mt-6">
-          <CourseExamTab courseId={course.id} />
         </TabsContent>
 
         <TabsContent value="certificates" className="mt-6">
