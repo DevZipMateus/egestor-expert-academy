@@ -17,9 +17,26 @@ export const useUserRole = (userEmail: string | null) => {
       }
 
       try {
-        // Verificar se é admin pelo email
-        if (userEmail === 'mateus.pinto@zipline.com.br') {
-          setRole('admin');
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          setRole(null);
+          setLoading(false);
+          return;
+        }
+
+        // Buscar role do banco de dados
+        const { data: userRole, error } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Erro ao buscar role:', error);
+          setRole('student');
+        } else if (userRole) {
+          setRole(userRole.role as UserRole);
         } else {
           setRole('student');
         }
