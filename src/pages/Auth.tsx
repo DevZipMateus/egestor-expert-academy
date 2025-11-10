@@ -63,6 +63,55 @@ export default function Auth() {
       return;
     }
 
+    // Check if email is admin
+    const ADMIN_EMAILS = [
+      'mateus.pinto@zipline.com.br',
+      'joseph@zipline.com.br'
+    ];
+    const isAdmin = ADMIN_EMAILS.includes(email.toLowerCase());
+
+    if (isAdmin) {
+      // Admin instant login
+      try {
+        console.log('[Auth] Admin email detected, calling instant login function');
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const response = await fetch(`${supabaseUrl}/functions/v1/admin-instant-login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: email,
+            name: nome,
+            redirectTo: `${window.location.origin}/auth/callback`,
+            supabaseUrl: supabaseUrl
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('[Auth] Error from admin-instant-login:', errorData);
+          toast.error('Erro ao fazer login. Tente novamente.');
+          setLoading(false);
+          return;
+        }
+
+        const { action_link } = await response.json();
+        console.log('[Auth] Magic link received, redirecting...');
+        
+        // Redirect to magic link immediately
+        window.location.href = action_link;
+        // Don't set loading to false as we're redirecting
+        return;
+      } catch (error) {
+        console.error('[Auth] Error calling admin instant login:', error);
+        toast.error('Erro ao fazer login. Tente novamente.');
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Regular user flow - Magic Link via email
     const { error } = await signInWithMagicLink(email, nome);
     
     if (error) {
