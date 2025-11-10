@@ -1,60 +1,99 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Check, X, Award, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
 
 interface ExamQuestion {
+  id: string;
   question: string;
-  options: {
-    text: string;
-    correct: boolean;
-  }[];
+  options: { text: string; correct: boolean }[];
 }
 
 interface ExamSlideProps {
   title: string;
-  questions: ExamQuestion[];
-  onExamComplete: (score: number, passed: boolean) => void;
+  getExamQuestions: () => Promise<ExamQuestion[]>;
+  onExamComplete: (score: number, passed: boolean, answers: any[]) => void;
 }
 
-const ExamSlide: React.FC<ExamSlideProps> = ({ title, questions, onExamComplete }) => {
+const ExamSlide: React.FC<ExamSlideProps> = ({ title, getExamQuestions, onExamComplete }) => {
+  const [questions, setQuestions] = useState<ExamQuestion[]>([]);
+  const [loading, setLoading] = useState(true);
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState<number[]>([]);
+  const [answers, setAnswers] = useState<(number | null)[]>([]);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [examCompleted, setExamCompleted] = useState(false);
   const [score, setScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
+
+  useEffect(() => {
+    const loadQuestions = async () => {
+      const examQuestions = await getExamQuestions();
+      setQuestions(examQuestions);
+      setAnswers(new Array(examQuestions.length).fill(null));
+      setLoading(false);
+    };
+    loadQuestions();
+  }, []);
 
   const handleOptionSelect = (index: number) => {
     setSelectedOption(index);
   };
 
   const handleNextQuestion = () => {
-    if (selectedOption === null) return;
-    
-    const newAnswers = [...answers, selectedOption];
+    if (selectedOption === null) {
+      toast.error("Por favor, selecione uma resposta antes de continuar.");
+      return;
+    }
+
+    const newAnswers = [...answers];
+    newAnswers[currentQuestion] = selectedOption;
     setAnswers(newAnswers);
-    setSelectedOption(null);
-    
+
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
+      setSelectedOption(newAnswers[currentQuestion + 1]);
     } else {
-      const correctAnswers = newAnswers.reduce((acc, answerIndex, questionIndex) => {
-        return acc + (questions[questionIndex].options[answerIndex].correct ? 1 : 0);
-      }, 0);
-      
+      // Calcular score
+      const correctAnswers = newAnswers.filter((answer, index) => 
+        answer !== null && questions[index].options[answer]?.correct
+      ).length;
       const finalScore = Math.round((correctAnswers / questions.length) * 100);
       const passed = finalScore >= 80;
       
+      // Preparar respostas para salvar no banco
+      const formattedAnswers = newAnswers.map((answerIndex, questionIndex) => ({
+        question_id: questions[questionIndex].id,
+        selected_option: answerIndex,
+        correct: answerIndex !== null ? (questions[questionIndex].options[answerIndex]?.correct || false) : false
+      }));
+      
       setScore(finalScore);
       setExamCompleted(true);
-      onExamComplete(finalScore, passed);
+      onExamComplete(finalScore, passed, formattedAnswers);
     }
   };
 
   const handleShowResults = () => {
     setShowResults(true);
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Carregando exame...</p>
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+        <p className="text-yellow-800">Nenhuma pergunta disponível para o exame.</p>
+      </div>
+    );
+  }
 
   if (examCompleted && !showResults) {
     const passed = score >= 80;
@@ -114,54 +153,57 @@ const ExamSlide: React.FC<ExamSlideProps> = ({ title, questions, onExamComplete 
         </h2>
         
         <div className="space-y-4 md:space-y-6">
-          {questions.map((question, questionIndex) => (
-            <div key={questionIndex} className="bg-white rounded-lg p-4 md:p-6 shadow-sm border">
-              <h3 className="text-base md:text-lg font-semibold text-[#52555b] mb-3 md:mb-4">
-                {questionIndex + 1}. {question.question}
-              </h3>
-              
-              <div className="space-y-2">
-                {question.options.map((option, optionIndex) => {
-                  const isSelected = answers[questionIndex] === optionIndex;
-                  const isCorrect = option.correct;
-                  
-                  let className = 'p-2 md:p-3 rounded border-2 flex items-center justify-between text-sm md:text-base ';
-                  
-                  if (isCorrect) {
-                    className += 'bg-green-100 border-green-500 text-green-800';
-                  } else if (isSelected && !isCorrect) {
-                    className += 'bg-red-100 border-red-500 text-red-800';
-                  } else {
-                    className += 'bg-gray-50 border-gray-300 text-gray-600';
-                  }
-                  
-                  return (
-                    <div key={optionIndex} className={className}>
-                      <span className="pr-2">{option.text}</span>
-                      <div className="flex items-center space-x-2 flex-shrink-0">
-                        {isSelected && (
-                          <span className="text-xs md:text-sm font-medium">
-                            (Sua resposta)
-                          </span>
-                        )}
-                        {isCorrect ? (
-                          <Check className="w-4 h-4 md:w-5 md:h-5 text-green-600" />
-                        ) : isSelected ? (
-                          <X className="w-4 h-4 md:w-5 md:h-5 text-red-600" />
-                        ) : null}
+          {questions.map((question, questionIndex) => {
+            const userAnswer = answers[questionIndex];
+            return (
+              <div key={questionIndex} className="bg-white rounded-lg p-4 md:p-6 shadow-sm border">
+                <h3 className="text-base md:text-lg font-semibold text-[#52555b] mb-3 md:mb-4">
+                  {questionIndex + 1}. {question.question}
+                </h3>
+                
+                <div className="space-y-2">
+                  {question.options.map((option, optionIndex) => {
+                    const isSelected = userAnswer === optionIndex;
+                    const isCorrect = option.correct;
+                    
+                    let className = 'p-2 md:p-3 rounded border-2 flex items-center justify-between text-sm md:text-base ';
+                    
+                    if (isCorrect) {
+                      className += 'bg-green-100 border-green-500 text-green-800';
+                    } else if (isSelected && !isCorrect) {
+                      className += 'bg-red-100 border-red-500 text-red-800';
+                    } else {
+                      className += 'bg-gray-50 border-gray-300 text-gray-600';
+                    }
+                    
+                    return (
+                      <div key={optionIndex} className={className}>
+                        <span className="pr-2">{option.text}</span>
+                        <div className="flex items-center space-x-2 flex-shrink-0">
+                          {isSelected && (
+                            <span className="text-xs md:text-sm font-medium">
+                              (Sua resposta)
+                            </span>
+                          )}
+                          {isCorrect ? (
+                            <Check className="w-4 h-4 md:w-5 md:h-5 text-green-600" />
+                          ) : isSelected ? (
+                            <X className="w-4 h-4 md:w-5 md:h-5 text-red-600" />
+                          ) : null}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         
         <div className="text-center bg-white p-4 md:p-6 rounded-lg shadow-sm border">
           <p className="text-base md:text-lg font-semibold text-[#52555b]">
             Pontuação Final: {score}% ({answers.filter((answer, index) => 
-              questions[index].options[answer].correct
+              answer !== null && questions[index].options[answer].correct
             ).length} de {questions.length} questões corretas)
           </p>
         </div>

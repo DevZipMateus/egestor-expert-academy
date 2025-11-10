@@ -281,7 +281,7 @@ export const useCourseData = () => {
       question: null,
       options: null,
       explanation: null,
-      examQuestions: slide.tipo === 'exam' ? getExamQuestions() : null
+      examQuestions: null // Will be loaded separately in the component
     };
   };
 
@@ -304,18 +304,96 @@ export const useCourseData = () => {
     };
   };
 
-  const getExamQuestions = () => {
-    console.log('📝 Gerando perguntas do exame final...');
-    const examQuestions = questions.map(q => ({
-      question: q.pergunta,
-      options: q.options.map(opt => ({
-        text: opt.texto,
-        correct: opt.correta
-      })),
-      explanation: q.explicacao || null
-    }));
-    console.log('✅ Perguntas do exame:', examQuestions.length);
-    return examQuestions;
+  const getExamQuestions = async () => {
+    console.log('📝 Buscando perguntas do exame final do banco...');
+    
+    try {
+      // Buscar o exame do curso
+      const { data: courseExam, error: examError } = await supabase
+        .from('course_exams')
+        .select('id')
+        .eq('course_id', 'c7b3e4d5-6789-4abc-def0-123456789012') // ID do curso Expert eGestor
+        .single();
+
+      if (examError || !courseExam) {
+        console.error('❌ Erro ao buscar exame:', examError);
+        return [];
+      }
+
+      // Buscar perguntas do exame
+      const { data: examQuestions, error: questionsError } = await supabase
+        .from('exam_questions')
+        .select(`
+          id,
+          pergunta,
+          ordem,
+          exam_question_options (
+            id,
+            texto,
+            correta,
+            ordem
+          )
+        `)
+        .eq('exam_id', courseExam.id)
+        .order('ordem', { ascending: true });
+
+      if (questionsError) {
+        console.error('❌ Erro ao buscar perguntas do exame:', questionsError);
+        return [];
+      }
+
+      const formattedQuestions = examQuestions.map((q: any) => ({
+        id: q.id,
+        question: q.pergunta,
+        options: q.exam_question_options
+          .sort((a: any, b: any) => a.ordem - b.ordem)
+          .map((opt: any) => ({
+            text: opt.texto,
+            correct: opt.correta
+          }))
+      }));
+
+      console.log('✅ Perguntas do exame carregadas:', formattedQuestions.length);
+      return formattedQuestions;
+    } catch (error) {
+      console.error('❌ Erro ao buscar perguntas do exame:', error);
+      return [];
+    }
+  };
+
+  const saveExamAttempt = async (examId: string, score: number, passed: boolean, answers: any[]) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user?.id) {
+        console.error('❌ Usuário não autenticado');
+        return { success: false, error: 'Usuário não autenticado' };
+      }
+
+      const { data, error } = await supabase
+        .from('exam_attempts')
+        .insert({
+          user_id: user.id,
+          exam_id: examId,
+          score,
+          passed,
+          answers: answers,
+          completed_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Erro ao salvar tentativa de exame:', error);
+        return { success: false, error: error.message };
+      }
+
+      console.log('✅ Tentativa de exame salva:', data);
+      return { success: true, data };
+    } catch (error) {
+      console.error('❌ Erro ao salvar tentativa de exame:', error);
+      return { success: false, error: 'Erro ao salvar tentativa' };
+    }
   };
 
   const getTotalSlidesCount = () => {
@@ -338,6 +416,7 @@ export const useCourseData = () => {
     getQuestionBySlideId,
     getTotalSlidesCount,
     getExamQuestions,
+    saveExamAttempt,
     markSlideAsAnswered
   };
 };

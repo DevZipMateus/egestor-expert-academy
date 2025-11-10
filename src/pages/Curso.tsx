@@ -34,6 +34,8 @@ const Curso = () => {
     getSlideByOrder, 
     getQuestionBySlideId, 
     getTotalSlidesCount,
+    getExamQuestions,
+    saveExamAttempt,
     markSlideAsAnswered
   } = useCourseData();
 
@@ -129,8 +131,22 @@ const Curso = () => {
     console.log('✅ Navegação liberada após resposta para slide:', currentSlide);
   };
 
-  const handleExamComplete = (score: number, passed: boolean) => {
+  const handleExamComplete = async (score: number, passed: boolean, answers: any[]) => {
     console.log('🎯 Exame completado:', score, 'passou:', passed);
+    
+    // Salvar tentativa no banco de dados
+    const result = await saveExamAttempt(
+      'c7b3e4d5-6789-4abc-def0-123456789012', // ID do exame do curso Expert eGestor
+      score,
+      passed,
+      answers
+    );
+
+    if (!result.success) {
+      toast.error('Erro ao salvar resultado do exame. Tente novamente.');
+      return;
+    }
+
     setExamScore(score);
     setExamPassed(passed);
     setCanAdvance(true);
@@ -213,7 +229,7 @@ const Curso = () => {
         return (
           <ExamSlide
             title={currentContent.title}
-            questions={currentContent.examQuestions!}
+            getExamQuestions={getExamQuestions}
             onExamComplete={handleExamComplete}
           />
         );
