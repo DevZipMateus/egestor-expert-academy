@@ -14,16 +14,298 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      courses: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          descricao: string | null
+          id: string
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      modules: {
+        Row: {
+          ativo: boolean | null
+          course_id: string | null
+          created_at: string | null
+          descricao: string | null
+          id: string
+          ordem: number
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          course_id?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          ordem: number
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          course_id?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          ordem?: number
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "modules_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          nome: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id: string
+          nome: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          nome?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      progresso_usuario: {
+        Row: {
+          aulas_assistidas: number[] | null
+          created_at: string | null
+          data_atualizacao: string | null
+          id: string
+          progresso_percentual: number | null
+          usuario_id: string
+        }
+        Insert: {
+          aulas_assistidas?: number[] | null
+          created_at?: string | null
+          data_atualizacao?: string | null
+          id?: string
+          progresso_percentual?: number | null
+          usuario_id: string
+        }
+        Update: {
+          aulas_assistidas?: number[] | null
+          created_at?: string | null
+          data_atualizacao?: string | null
+          id?: string
+          progresso_percentual?: number | null
+          usuario_id?: string
+        }
+        Relationships: []
+      }
+      question_options: {
+        Row: {
+          correta: boolean | null
+          created_at: string | null
+          id: string
+          ordem: number
+          question_id: string | null
+          texto: string
+        }
+        Insert: {
+          correta?: boolean | null
+          created_at?: string | null
+          id?: string
+          ordem: number
+          question_id?: string | null
+          texto: string
+        }
+        Update: {
+          correta?: boolean | null
+          created_at?: string | null
+          id?: string
+          ordem?: number
+          question_id?: string | null
+          texto?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_options_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      questions: {
+        Row: {
+          course_id: string | null
+          created_at: string | null
+          explicacao: string | null
+          id: string
+          pergunta: string
+          slide_id: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          course_id?: string | null
+          created_at?: string | null
+          explicacao?: string | null
+          id?: string
+          pergunta: string
+          slide_id?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          course_id?: string | null
+          created_at?: string | null
+          explicacao?: string | null
+          id?: string
+          pergunta?: string
+          slide_id?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_slide_id_fkey"
+            columns: ["slide_id"]
+            isOneToOne: false
+            referencedRelation: "slides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      slides: {
+        Row: {
+          ativo: boolean | null
+          conteudo: string | null
+          course_id: string | null
+          created_at: string | null
+          id: number
+          module_id: string | null
+          ordem: number
+          tipo: string
+          titulo: string
+          updated_at: string | null
+          video_url: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          conteudo?: string | null
+          course_id?: string | null
+          created_at?: string | null
+          id?: number
+          module_id?: string | null
+          ordem: number
+          tipo: string
+          titulo: string
+          updated_at?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          conteudo?: string | null
+          course_id?: string | null
+          created_at?: string | null
+          id?: number
+          module_id?: string | null
+          ordem?: number
+          tipo?: string
+          titulo?: string
+          updated_at?: string | null
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "slides_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "slides_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +432,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const
