@@ -20,7 +20,7 @@ export default function Auth() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/introducao');
+      navigate('/dashboard');
     }
   }, [isAuthenticated, navigate]);
 

@@ -7,7 +7,7 @@ const Introducao = () => {
   const navigate = useNavigate();
 
   const goToNext = () => {
-    navigate('/login');
+    navigate('/dashboard');
   };
 
   return (

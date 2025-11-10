@@ -4,13 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { BookOpen, Trophy, Clock, User, LogOut } from 'lucide-react';
+import { BookOpen, Trophy, Clock, User, LogOut, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { role } = useUserRole(user?.email || null);
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -47,6 +49,16 @@ const Dashboard = () => {
                   <User className="w-5 h-5 text-gray-600" />
                   <span className="font-opensans text-gray-700">{user?.email}</span>
                 </div>
+                {role === 'admin' && (
+                  <Button
+                    onClick={() => navigate('/admin')}
+                    className="flex items-center gap-2 text-white"
+                    style={{ backgroundColor: '#d61c00' }}
+                  >
+                    <Shield className="w-4 h-4" />
+                    Admin
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   onClick={handleLogout}

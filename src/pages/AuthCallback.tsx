@@ -33,8 +33,8 @@ export default function AuthCallback() {
 
         if (session?.user) {
           console.log('[AuthCallback] User authenticated:', session.user.email);
-          // Successfully authenticated, redirect to introducao
-          navigate('/introducao', { replace: true });
+          // Successfully authenticated, redirect to dashboard
+          navigate('/dashboard', { replace: true });
         } else {
           console.warn('[AuthCallback] No session found after processing');
           // No session found, link might be invalid or expired
