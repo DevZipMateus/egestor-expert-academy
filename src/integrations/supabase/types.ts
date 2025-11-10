@@ -14,6 +14,101 @@ export type Database = {
   }
   public: {
     Tables: {
+      certificates: {
+        Row: {
+          certificate_number: string
+          course_id: string
+          created_at: string | null
+          email_sent_at: string | null
+          exam_attempt_id: string
+          id: string
+          issued_at: string
+          pdf_url: string | null
+          user_id: string
+        }
+        Insert: {
+          certificate_number: string
+          course_id: string
+          created_at?: string | null
+          email_sent_at?: string | null
+          exam_attempt_id: string
+          id?: string
+          issued_at?: string
+          pdf_url?: string | null
+          user_id: string
+        }
+        Update: {
+          certificate_number?: string
+          course_id?: string
+          created_at?: string | null
+          email_sent_at?: string | null
+          exam_attempt_id?: string
+          id?: string
+          issued_at?: string
+          pdf_url?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificates_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificates_exam_attempt_id_fkey"
+            columns: ["exam_attempt_id"]
+            isOneToOne: false
+            referencedRelation: "exam_attempts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_exams: {
+        Row: {
+          ativo: boolean | null
+          course_id: string
+          created_at: string | null
+          descricao: string | null
+          id: string
+          ordem: number
+          passing_score: number
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          course_id: string
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          ordem: number
+          passing_score?: number
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          course_id?: string
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          ordem?: number
+          passing_score?: number
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_exams_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           ativo: boolean | null
@@ -40,6 +135,117 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      exam_attempts: {
+        Row: {
+          answers: Json | null
+          completed_at: string
+          created_at: string | null
+          exam_id: string
+          id: string
+          passed: boolean
+          score: number
+          user_id: string
+        }
+        Insert: {
+          answers?: Json | null
+          completed_at?: string
+          created_at?: string | null
+          exam_id: string
+          id?: string
+          passed: boolean
+          score: number
+          user_id: string
+        }
+        Update: {
+          answers?: Json | null
+          completed_at?: string
+          created_at?: string | null
+          exam_id?: string
+          id?: string
+          passed?: boolean
+          score?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_attempts_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "course_exams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_question_options: {
+        Row: {
+          correta: boolean | null
+          created_at: string | null
+          exam_question_id: string
+          id: string
+          ordem: number
+          texto: string
+        }
+        Insert: {
+          correta?: boolean | null
+          created_at?: string | null
+          exam_question_id: string
+          id?: string
+          ordem: number
+          texto: string
+        }
+        Update: {
+          correta?: boolean | null
+          created_at?: string | null
+          exam_question_id?: string
+          id?: string
+          ordem?: number
+          texto?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_question_options_exam_question_id_fkey"
+            columns: ["exam_question_id"]
+            isOneToOne: false
+            referencedRelation: "exam_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_questions: {
+        Row: {
+          created_at: string | null
+          exam_id: string
+          id: string
+          ordem: number
+          pergunta: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          exam_id: string
+          id?: string
+          ordem: number
+          pergunta: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          exam_id?: string
+          id?: string
+          ordem?: number
+          pergunta?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_questions_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "course_exams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       modules: {
         Row: {
