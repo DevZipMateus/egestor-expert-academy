@@ -13,6 +13,8 @@ import Admin from "./pages/Admin";
 import Curso from "./pages/Curso";
 import Expert from "./pages/Expert";
 import NotFound from "./pages/NotFound";
+import Login from "./pages/Login";
+import Cadastro from "./pages/Cadastro";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +28,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/cadastro" element={<Cadastro />} />
             <Route path="/introducao" element={<Introducao />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/admin" element={<Admin />} />
