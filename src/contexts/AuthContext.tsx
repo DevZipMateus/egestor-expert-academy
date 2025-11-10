@@ -5,8 +5,7 @@ import { User, Session } from '@supabase/supabase-js';
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  signUp: (email: string, password: string, nome: string) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signInWithMagicLink: (email: string, nome: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
   loading: boolean;
@@ -15,8 +14,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
-  signUp: async () => ({ error: null }),
-  signIn: async () => ({ error: null }),
+  signInWithMagicLink: async () => ({ error: null }),
   signOut: async () => {},
   isAuthenticated: false,
   loading: true,
@@ -38,10 +36,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Create/update profile when user signs in via magic link
+        if (event === 'SIGNED_IN' && session?.user) {
+          const storedName = localStorage.getItem('pending_user_name');
+          if (storedName) {
+            setTimeout(async () => {
+              try {
+                await supabase.from('profiles').upsert({
+                  id: session.user.id,
+                  email: session.user.email!,
+                  nome: storedName,
+                  updated_at: new Date().toISOString(),
+                });
+                localStorage.removeItem('pending_user_name');
+              } catch (error) {
+                console.error('Error creating profile:', error);
+              }
+            }, 0);
+          }
+        }
       }
     );
 
@@ -55,26 +73,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, nome: string) => {
-    const redirectUrl = `${window.location.origin}/`;
+  const signInWithMagicLink = async (email: string, nome: string) => {
+    const redirectUrl = `${window.location.origin}/introducao`;
     
-    const { error } = await supabase.auth.signUp({
+    // Store name temporarily to create profile after magic link callback
+    localStorage.setItem('pending_user_name', nome);
+    
+    const { error } = await supabase.auth.signInWithOtp({
       email,
-      password,
       options: {
         emailRedirectTo: redirectUrl,
-        data: {
-          nome: nome
-        }
       }
-    });
-    return { error };
-  };
-
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
     });
     return { error };
   };
@@ -86,7 +95,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isAuthenticated = !!user;
 
   return (
-    <AuthContext.Provider value={{ user, session, signUp, signIn, signOut, isAuthenticated, loading }}>
+    <AuthContext.Provider value={{ user, session, signInWithMagicLink, signOut, isAuthenticated, loading }}>
       {children}
     </AuthContext.Provider>
   );
