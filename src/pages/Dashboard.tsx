@@ -10,54 +10,97 @@ import { useUserRole } from '@/hooks/useUserRole';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { supabase } from '@/integrations/supabase/client';
 
+interface CourseProgress {
+  courseId: string;
+  courseName: string;
+  courseSlug: string;
+  progress: number;
+  lastSlide: number;
+  totalSlides: number;
+}
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { role } = useUserRole(user?.email || null);
-  const [progress, setProgress] = useState(0);
-  const [courseId] = useState('550e8400-e29b-41d4-a716-446655440000');
+  const [courses, setCourses] = useState<CourseProgress[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadProgress = async () => {
+    const loadCourses = async () => {
       if (!user?.id) return;
       
-      const { data: progressData } = await supabase
-        .from('progresso_usuario')
-        .select('aulas_assistidas, progresso_percentual')
-        .eq('usuario_id', user.id)
-        .eq('course_id', courseId)
-        .maybeSingle();
+      setLoading(true);
       
-      if (progressData) {
-        setProgress(progressData.progresso_percentual || 0);
+      // Buscar todos os cursos em que o usuário está matriculado
+      const { data: enrollments, error: enrollError } = await supabase
+        .from('progresso_usuario')
+        .select(`
+          course_id,
+          aulas_assistidas,
+          progresso_percentual,
+          courses (
+            id,
+            titulo,
+            slug
+          )
+        `)
+        .eq('usuario_id', user.id);
+      
+      if (enrollError) {
+        console.error('Erro ao carregar cursos:', enrollError);
+        setLoading(false);
+        return;
       }
+
+      if (!enrollments || enrollments.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      // Para cada curso, buscar total de slides
+      const coursesWithProgress = await Promise.all(
+        enrollments.map(async (enrollment) => {
+          const course = enrollment.courses as any;
+          
+          // Buscar total de slides do curso
+          const { count: totalSlides } = await supabase
+            .from('slides')
+            .select('*', { count: 'exact', head: true })
+            .eq('course_id', enrollment.course_id)
+            .eq('ativo', true);
+
+          // Calcular último slide assistido
+          const lastSlide = enrollment.aulas_assistidas && enrollment.aulas_assistidas.length > 0
+            ? Math.max(...enrollment.aulas_assistidas)
+            : 0;
+
+          return {
+            courseId: enrollment.course_id,
+            courseName: course?.titulo || 'Curso sem título',
+            courseSlug: course?.slug || '',
+            progress: enrollment.progresso_percentual || 0,
+            lastSlide,
+            totalSlides: totalSlides || 0,
+          };
+        })
+      );
+
+      setCourses(coursesWithProgress);
+      setLoading(false);
     };
     
-    loadProgress();
-  }, [user, courseId]);
+    loadCourses();
+  }, [user]);
 
   const handleLogout = async () => {
     await signOut();
     navigate('/auth');
   };
 
-  const handleContinueCourse = async () => {
-    if (!user?.id) return;
-    
-    // Buscar progresso do usuário
-    const { data: progressData } = await supabase
-      .from('progresso_usuario')
-      .select('aulas_assistidas')
-      .eq('usuario_id', user.id)
-      .eq('course_id', courseId)
-      .maybeSingle();
-    
+  const handleContinueCourse = async (courseId: string, lastSlide: number) => {
     // Se tem progresso, pegar o último slide assistido + 1, senão começar do slide 1
-    let nextSlide = 1;
-    if (progressData?.aulas_assistidas && progressData.aulas_assistidas.length > 0) {
-      const lastWatched = Math.max(...progressData.aulas_assistidas);
-      nextSlide = lastWatched + 1;
-    }
+    const nextSlide = lastSlide > 0 ? lastSlide + 1 : 1;
     
     // Navegar para o curso com courseId e slide corretos
     navigate(`/curso/${courseId}/${nextSlide}`);
@@ -108,74 +151,77 @@ const Dashboard = () => {
 
         {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Welcome Card */}
-            <div className="lg:col-span-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="font-roboto" style={{ color: '#52555b' }}>
-                    Bem-vindo de volta!
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 font-opensans mb-6">
-                    Continue sua jornada de aprendizado no eGestor Expert Academy
-                  </p>
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-opensans text-gray-600">Progresso do Curso</span>
-                        <span className="text-sm font-opensans font-semibold">{progress}%</span>
-                      </div>
-                      <Progress value={progress} className="h-2" />
-                    </div>
-                    <Button 
-                      onClick={handleContinueCourse}
-                      className="w-full text-white font-opensans"
-                      style={{ backgroundColor: '#d61c00' }}
-                    >
-                      <BookOpen className="w-4 h-4 mr-2" />
-                      Continuar Curso
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: '#d61c00' }}></div>
             </div>
+          ) : courses.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                <h3 className="text-xl font-roboto font-semibold mb-2" style={{ color: '#52555b' }}>
+                  Nenhum curso iniciado
+                </h3>
+                <p className="text-gray-600 font-opensans mb-6">
+                  Você ainda não está matriculado em nenhum curso.
+                </p>
+                <Button 
+                  onClick={() => navigate('/')}
+                  className="text-white font-opensans"
+                  style={{ backgroundColor: '#d61c00' }}
+                >
+                  Explorar Cursos
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div>
+              <h2 className="text-2xl font-bold font-roboto mb-6" style={{ color: '#52555b' }}>
+                Meus Cursos
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {courses.map((course) => (
+                  <Card key={course.courseId} className="hover:shadow-lg transition-shadow">
+                    <CardHeader>
+                      <CardTitle className="font-roboto text-lg" style={{ color: '#52555b' }}>
+                        {course.courseName}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div>
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm font-opensans text-gray-600">Progresso</span>
+                            <span className="text-sm font-opensans font-semibold">{course.progress}%</span>
+                          </div>
+                          <Progress value={course.progress} className="h-2" />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              <BookOpen className="w-4 h-4 text-blue-500" />
+                              <span className="font-opensans text-gray-600">Aulas Assistidas</span>
+                            </div>
+                            <span className="font-semibold">{course.lastSlide}/{course.totalSlides}</span>
+                          </div>
+                        </div>
 
-            {/* Stats Cards */}
-            <div className="space-y-6">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg font-roboto" style={{ color: '#52555b' }}>
-                    Estatísticas
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="w-5 h-5 text-blue-500" />
-                      <span className="font-opensans text-sm">Aulas Assistidas</span>
-                    </div>
-                    <span className="font-semibold">{Math.floor(progress * 0.47)}/47</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Trophy className="w-5 h-5 text-yellow-500" />
-                      <span className="font-opensans text-sm">Exercícios</span>
-                    </div>
-                    <span className="font-semibold">{Math.floor(progress * 0.1)}/10</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-5 h-5 text-green-500" />
-                      <span className="font-opensans text-sm">Tempo Total</span>
-                    </div>
-                    <span className="font-semibold">{Math.floor(progress * 0.8)}h</span>
-                  </div>
-                </CardContent>
-              </Card>
+                        <Button 
+                          onClick={() => handleContinueCourse(course.courseId, course.lastSlide)}
+                          className="w-full text-white font-opensans mt-4"
+                          style={{ backgroundColor: '#d61c00' }}
+                        >
+                          <BookOpen className="w-4 h-4 mr-2" />
+                          {course.lastSlide > 0 ? 'Continuar Curso' : 'Iniciar Curso'}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </ProtectedRoute>
