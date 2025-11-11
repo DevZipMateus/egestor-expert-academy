@@ -235,12 +235,49 @@ const Curso = () => {
       return;
     }
 
+    const examAttemptId = result.data?.id;
+
     setExamScore(score);
     setExamPassed(passed);
     setCanAdvance(true);
     
     if (passed) {
       toast.success(`Parabéns! Você foi aprovado com ${score}%! 🎉`);
+      
+      // Gerar certificado automaticamente
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-certificate`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session?.access_token}`,
+            },
+            body: JSON.stringify({ examAttemptId }),
+          }
+        );
+
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `certificado-${examAttemptId}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+          
+          toast.success('Seu certificado foi gerado e baixado automaticamente! 📜');
+        } else {
+          console.error('Erro ao gerar certificado:', await response.text());
+        }
+      } catch (error) {
+        console.error('Erro ao gerar certificado:', error);
+      }
     } else {
       toast.error(`Você obteve ${score}%. É necessário 80% para aprovação.`);
     }
