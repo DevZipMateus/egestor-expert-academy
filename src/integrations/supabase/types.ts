@@ -76,6 +76,7 @@ export type Database = {
           passing_score: number
           randomize_options: boolean | null
           randomize_questions: boolean | null
+          time_limit_minutes: number | null
           titulo: string
           updated_at: string | null
         }
@@ -89,6 +90,7 @@ export type Database = {
           passing_score?: number
           randomize_options?: boolean | null
           randomize_questions?: boolean | null
+          time_limit_minutes?: number | null
           titulo: string
           updated_at?: string | null
         }
@@ -102,6 +104,7 @@ export type Database = {
           passing_score?: number
           randomize_options?: boolean | null
           randomize_questions?: boolean | null
+          time_limit_minutes?: number | null
           titulo?: string
           updated_at?: string | null
         }

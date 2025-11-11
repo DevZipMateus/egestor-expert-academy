@@ -52,6 +52,7 @@ interface TransformedSlideData {
     explanation: string | null;
   }> | null;
   examId: string | null;
+  timeLimit: number | null;
 }
 
 export const useCourseData = () => {
@@ -271,7 +272,8 @@ export const useCourseData = () => {
           options: q.options,
           explanation: null // Static exam questions don't have explanations
         })) : null,
-        examId: null // Static data doesn't have examId
+        examId: null, // Static data doesn't have examId
+        timeLimit: null // Static data doesn't have timeLimit
       };
     }
 
@@ -295,7 +297,8 @@ export const useCourseData = () => {
       options: null,
       explanation: null,
       examQuestions: null, // Will be loaded separately in the component
-      examId: slide.exam_id
+      examId: slide.exam_id,
+      timeLimit: null // Will be fetched when exam questions are loaded
     };
   };
 
@@ -323,12 +326,13 @@ export const useCourseData = () => {
     
     try {
       let targetExamId = examId;
+      let examTimeLimit: number | null = null;
       
       // Se não forneceu examId, buscar o exame padrão do curso (fallback para compatibilidade)
       if (!examId) {
         const { data: courseExam, error: examError } = await supabase
           .from('course_exams')
-          .select('id, randomize_questions, randomize_options')
+          .select('id, randomize_questions, randomize_options, time_limit_minutes')
           .eq('course_id', '550e8400-e29b-41d4-a716-446655440000') // ID do curso Expert eGestor
           .single();
 
@@ -338,17 +342,20 @@ export const useCourseData = () => {
         }
         
         targetExamId = courseExam.id;
+        examTimeLimit = courseExam.time_limit_minutes;
       }
 
       // Buscar configurações do exame
       const { data: examConfig, error: examConfigError } = await supabase
         .from('course_exams')
-        .select('randomize_questions, randomize_options')
+        .select('randomize_questions, randomize_options, time_limit_minutes')
         .eq('id', targetExamId)
         .single();
 
       if (examConfigError) {
         console.error('❌ Erro ao buscar configurações do exame:', examConfigError);
+      } else {
+        examTimeLimit = examConfig?.time_limit_minutes || null;
       }
 
       // Buscar perguntas do exame específico
@@ -411,6 +418,26 @@ export const useCourseData = () => {
     }
   };
 
+  const getExamTimeLimit = async (examId: string): Promise<number | null> => {
+    try {
+      const { data: examConfig, error } = await supabase
+        .from('course_exams')
+        .select('time_limit_minutes')
+        .eq('id', examId)
+        .single();
+
+      if (error) {
+        console.error('❌ Erro ao buscar tempo limite do exame:', error);
+        return null;
+      }
+
+      return examConfig?.time_limit_minutes || null;
+    } catch (error) {
+      console.error('❌ Erro ao buscar tempo limite:', error);
+      return null;
+    }
+  };
+
   const saveExamAttempt = async (examId: string, score: number, passed: boolean, answers: any[]) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -466,6 +493,7 @@ export const useCourseData = () => {
     getQuestionBySlideId,
     getTotalSlidesCount,
     getExamQuestions,
+    getExamTimeLimit,
     saveExamAttempt,
     markSlideAsAnswered
   };

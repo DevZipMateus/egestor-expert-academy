@@ -44,6 +44,7 @@ interface Exam {
   ativo: boolean;
   randomize_questions: boolean;
   randomize_options: boolean;
+  time_limit_minutes: number | null;
 }
 
 interface ExamQuestion {
@@ -144,6 +145,7 @@ const CourseExamTab = ({ courseId }: CourseExamTabProps) => {
     ativo: true,
     randomize_questions: false,
     randomize_options: false,
+    time_limit_minutes: null as number | null,
   });
 
   const sensors = useSensors(
@@ -182,6 +184,7 @@ const CourseExamTab = ({ courseId }: CourseExamTabProps) => {
           ativo: examData.ativo,
           randomize_questions: examData.randomize_questions || false,
           randomize_options: examData.randomize_options || false,
+          time_limit_minutes: examData.time_limit_minutes,
         });
 
         const { data: questionsData, error: questionsError } = await supabase
@@ -214,6 +217,7 @@ const CourseExamTab = ({ courseId }: CourseExamTabProps) => {
           ativo: examFormData.ativo,
           randomize_questions: examFormData.randomize_questions,
           randomize_options: examFormData.randomize_options,
+          time_limit_minutes: examFormData.time_limit_minutes,
         })
         .select()
         .single();
@@ -242,6 +246,7 @@ const CourseExamTab = ({ courseId }: CourseExamTabProps) => {
           ativo: examFormData.ativo,
           randomize_questions: examFormData.randomize_questions,
           randomize_options: examFormData.randomize_options,
+          time_limit_minutes: examFormData.time_limit_minutes,
         })
         .eq('id', exam.id);
 
@@ -497,6 +502,19 @@ const CourseExamTab = ({ courseId }: CourseExamTabProps) => {
                     onChange={(e) => setExamFormData({ ...examFormData, passing_score: parseInt(e.target.value) })}
                   />
                 </div>
+                <div>
+                  <Label>Tempo Limite (minutos)</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder="Deixe vazio para sem limite"
+                    value={examFormData.time_limit_minutes || ''}
+                    onChange={(e) => setExamFormData({ ...examFormData, time_limit_minutes: e.target.value ? parseInt(e.target.value) : null })}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Exame será salvo automaticamente quando o tempo acabar
+                  </p>
+                </div>
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -686,6 +704,19 @@ const CourseExamTab = ({ courseId }: CourseExamTabProps) => {
                 onChange={(e) => setExamFormData({ ...examFormData, passing_score: parseInt(e.target.value) })}
               />
             </div>
+            <div>
+              <Label>Tempo Limite (minutos)</Label>
+              <Input
+                type="number"
+                min="1"
+                placeholder="Deixe vazio para sem limite"
+                value={examFormData.time_limit_minutes || ''}
+                onChange={(e) => setExamFormData({ ...examFormData, time_limit_minutes: e.target.value ? parseInt(e.target.value) : null })}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Exame será salvo automaticamente quando o tempo acabar
+              </p>
+            </div>
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -804,6 +835,7 @@ const CourseExamTab = ({ courseId }: CourseExamTabProps) => {
                 title={exam.titulo}
                 getExamQuestions={getExamQuestionsForPreview}
                 onExamComplete={handlePreviewComplete}
+                timeLimit={exam.time_limit_minutes}
               />
             )}
           </div>

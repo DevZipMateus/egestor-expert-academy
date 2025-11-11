@@ -24,6 +24,7 @@ const Curso = () => {
   const [examPassed, setExamPassed] = useState<boolean>(false);
   const [canAdvance, setCanAdvance] = useState<boolean>(true);
   const [exerciseAnswered, setExerciseAnswered] = useState<boolean>(false);
+  const [examTimeLimit, setExamTimeLimit] = useState<number | null>(null);
   const currentSlide = parseInt(slide || '1');
   const prevSlideRef = useRef<number>(currentSlide);
   
@@ -36,6 +37,7 @@ const Curso = () => {
     getQuestionBySlideId, 
     getTotalSlidesCount,
     getExamQuestions,
+    getExamTimeLimit,
     saveExamAttempt,
     markSlideAsAnswered
   } = useCourseData();
@@ -115,6 +117,21 @@ const Curso = () => {
       }
     }
   }, [currentSlide, currentContent?.type, answeredSlides]);
+
+  // Buscar time limit quando o exame mudar
+  useEffect(() => {
+    const fetchExamTimeLimit = async () => {
+      if (currentContent?.type === 'exam' && currentContent.examId) {
+        const timeLimit = await getExamTimeLimit(currentContent.examId);
+        setExamTimeLimit(timeLimit);
+        console.log('⏱️ Tempo limite do exame:', timeLimit ? `${timeLimit} minutos` : 'Sem limite');
+      } else {
+        setExamTimeLimit(null);
+      }
+    };
+
+    fetchExamTimeLimit();
+  }, [currentContent?.examId, currentContent?.type, getExamTimeLimit]);
 
   const goToPrevious = () => {
     if (currentSlide > 1) {
@@ -275,6 +292,7 @@ const Curso = () => {
             title={currentContent.title}
             getExamQuestions={() => getExamQuestions(currentContent.examId || undefined)}
             onExamComplete={handleExamComplete}
+            timeLimit={examTimeLimit}
           />
         );
       

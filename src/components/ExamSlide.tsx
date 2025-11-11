@@ -14,9 +14,10 @@ interface ExamSlideProps {
   title: string;
   getExamQuestions: () => Promise<ExamQuestion[]>;
   onExamComplete: (score: number, passed: boolean, answers: any[]) => void;
+  timeLimit?: number | null; // Time limit in minutes
 }
 
-const ExamSlide: React.FC<ExamSlideProps> = ({ title, getExamQuestions, onExamComplete }) => {
+const ExamSlide: React.FC<ExamSlideProps> = ({ title, getExamQuestions, onExamComplete, timeLimit }) => {
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -25,6 +26,7 @@ const ExamSlide: React.FC<ExamSlideProps> = ({ title, getExamQuestions, onExamCo
   const [examCompleted, setExamCompleted] = useState(false);
   const [score, setScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null); // em segundos
 
   useEffect(() => {
     const loadQuestions = async () => {
@@ -32,9 +34,62 @@ const ExamSlide: React.FC<ExamSlideProps> = ({ title, getExamQuestions, onExamCo
       setQuestions(examQuestions);
       setAnswers(new Array(examQuestions.length).fill(null));
       setLoading(false);
+      
+      // Iniciar timer se houver limite de tempo
+      if (timeLimit && timeLimit > 0) {
+        setTimeRemaining(timeLimit * 60); // converter minutos para segundos
+      }
     };
     loadQuestions();
-  }, []);
+  }, [timeLimit]);
+
+  // Countdown timer
+  useEffect(() => {
+    if (timeRemaining === null || timeRemaining <= 0 || examCompleted) return;
+
+    const timer = setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev === null || prev <= 1) {
+          // Tempo acabou - submeter automaticamente
+          handleTimeUp();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [timeRemaining, examCompleted]);
+
+  const handleTimeUp = () => {
+    if (examCompleted) return;
+    
+    toast.warning("Tempo esgotado! O exame será enviado automaticamente.");
+    
+    // Calcular score com as respostas atuais
+    const correctAnswers = answers.filter((answer, index) => 
+      answer !== null && questions[index]?.options[answer]?.correct
+    ).length;
+    const finalScore = Math.round((correctAnswers / questions.length) * 100);
+    const passed = finalScore >= 80;
+    
+    // Preparar respostas para salvar no banco
+    const formattedAnswers = answers.map((answerIndex, questionIndex) => ({
+      question_id: questions[questionIndex]?.id || '',
+      selected_option: answerIndex,
+      correct: answerIndex !== null ? (questions[questionIndex]?.options[answerIndex]?.correct || false) : false
+    }));
+    
+    setScore(finalScore);
+    setExamCompleted(true);
+    onExamComplete(finalScore, passed, formattedAnswers);
+  };
+
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const handleOptionSelect = (index: number) => {
     setSelectedOption(index);
@@ -217,8 +272,20 @@ const ExamSlide: React.FC<ExamSlideProps> = ({ title, getExamQuestions, onExamCo
         <h2 className="text-2xl md:text-3xl font-bold text-[#52555b] font-roboto">
           {title}
         </h2>
-        <div className="text-sm md:text-base text-[#52555b] font-opensans">
-          Questão {currentQuestion + 1} de {questions.length}
+        <div className="flex items-center gap-4">
+          {timeRemaining !== null && timeRemaining > 0 && (
+            <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${
+              timeRemaining < 300 ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
+            }`}>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="font-semibold text-sm">{formatTime(timeRemaining)}</span>
+            </div>
+          )}
+          <div className="text-sm md:text-base text-[#52555b] font-opensans">
+            Questão {currentQuestion + 1} de {questions.length}
+          </div>
         </div>
       </div>
       
