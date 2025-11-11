@@ -14,6 +14,7 @@ import {
 import { useCourseData } from '@/hooks/useCourseData';
 import { Play, HelpCircle, AlertTriangle, FileText, Trophy, Lock } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Progress } from "@/components/ui/progress";
 
 const CourseSidebar = () => {
   const navigate = useNavigate();
@@ -96,6 +97,11 @@ const CourseSidebar = () => {
 
   const slideGroups = organizeSlidesByRange(slides);
 
+  // Calcular progresso (excluindo o exame - slide 47)
+  const totalContentSlides = 46;
+  const completedSlides = Array.from(answeredSlides).filter(slide => slide <= 46).length;
+  const progressPercentage = Math.round((completedSlides / totalContentSlides) * 100);
+
   return (
     <Sidebar className="w-64 md:w-80 bg-white border-r border-gray-200">
       <SidebarContent>
@@ -109,6 +115,22 @@ const CourseSidebar = () => {
           {useStaticData && (
             <p className="text-xs text-yellow-600 mt-1">Modo Offline</p>
           )}
+        </div>
+        
+        {/* Indicador de Progresso */}
+        <div className="p-3 md:p-4 border-b border-gray-200 bg-muted/30">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs md:text-sm font-medium text-foreground">
+              Seu Progresso
+            </span>
+            <span className="text-xs md:text-sm font-bold text-primary">
+              {progressPercentage}%
+            </span>
+          </div>
+          <Progress value={progressPercentage} className="h-2" />
+          <p className="text-xs text-muted-foreground mt-2">
+            {completedSlides} de {totalContentSlides} slides completados
+          </p>
         </div>
         
         <div className="overflow-y-auto">
