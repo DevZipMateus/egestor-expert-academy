@@ -2,6 +2,16 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { getSlideById, getTotalSlides } from '@/data/courseData';
 
+// Função Fisher-Yates para embaralhar array de forma eficiente
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
 interface SlideData {
   id: number;
   titulo: string;
@@ -318,7 +328,7 @@ export const useCourseData = () => {
       if (!examId) {
         const { data: courseExam, error: examError } = await supabase
           .from('course_exams')
-          .select('id')
+          .select('id, randomize_questions, randomize_options')
           .eq('course_id', '550e8400-e29b-41d4-a716-446655440000') // ID do curso Expert eGestor
           .single();
 
@@ -328,6 +338,17 @@ export const useCourseData = () => {
         }
         
         targetExamId = courseExam.id;
+      }
+
+      // Buscar configurações do exame
+      const { data: examConfig, error: examConfigError } = await supabase
+        .from('course_exams')
+        .select('randomize_questions, randomize_options')
+        .eq('id', targetExamId)
+        .single();
+
+      if (examConfigError) {
+        console.error('❌ Erro ao buscar configurações do exame:', examConfigError);
       }
 
       // Buscar perguntas do exame específico
@@ -352,16 +373,35 @@ export const useCourseData = () => {
         return [];
       }
 
-      const formattedQuestions = examQuestions.map((q: any) => ({
-        id: q.id,
-        question: q.pergunta,
-        options: q.exam_question_options
-          .sort((a: any, b: any) => a.ordem - b.ordem)
-          .map((opt: any) => ({
+      let formattedQuestions = examQuestions.map((q: any) => {
+        // Ordenar opções pela ordem original
+        const sortedOptions = q.exam_question_options
+          .sort((a: any, b: any) => a.ordem - b.ordem);
+        
+        // Aplicar randomização nas opções se configurado
+        const options = examConfig?.randomize_options 
+          ? shuffleArray(sortedOptions)
+          : sortedOptions;
+
+        return {
+          id: q.id,
+          question: q.pergunta,
+          options: options.map((opt: any) => ({
             text: opt.texto,
             correct: opt.correta
           }))
-      }));
+        };
+      });
+
+      // Aplicar randomização nas perguntas se configurado
+      if (examConfig?.randomize_questions) {
+        formattedQuestions = shuffleArray(formattedQuestions);
+        console.log('🔀 Ordem das perguntas embaralhada');
+      }
+
+      if (examConfig?.randomize_options) {
+        console.log('🔀 Ordem das opções embaralhada');
+      }
 
       console.log('✅ Perguntas do exame carregadas:', formattedQuestions.length);
       return formattedQuestions;

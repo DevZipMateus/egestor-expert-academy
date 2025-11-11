@@ -74,6 +74,8 @@ export type Database = {
           id: string
           ordem: number
           passing_score: number
+          randomize_options: boolean | null
+          randomize_questions: boolean | null
           titulo: string
           updated_at: string | null
         }
@@ -85,6 +87,8 @@ export type Database = {
           id?: string
           ordem: number
           passing_score?: number
+          randomize_options?: boolean | null
+          randomize_questions?: boolean | null
           titulo: string
           updated_at?: string | null
         }
@@ -96,6 +100,8 @@ export type Database = {
           id?: string
           ordem?: number
           passing_score?: number
+          randomize_options?: boolean | null
+          randomize_questions?: boolean | null
           titulo?: string
           updated_at?: string | null
         }

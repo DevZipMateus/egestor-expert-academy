@@ -42,6 +42,8 @@ interface Exam {
   passing_score: number;
   ordem: number;
   ativo: boolean;
+  randomize_questions: boolean;
+  randomize_options: boolean;
 }
 
 interface ExamQuestion {
@@ -140,6 +142,8 @@ const CourseExamTab = ({ courseId }: CourseExamTabProps) => {
     descricao: '',
     passing_score: 80,
     ativo: true,
+    randomize_questions: false,
+    randomize_options: false,
   });
 
   const sensors = useSensors(
@@ -176,6 +180,8 @@ const CourseExamTab = ({ courseId }: CourseExamTabProps) => {
           descricao: examData.descricao || '',
           passing_score: examData.passing_score,
           ativo: examData.ativo,
+          randomize_questions: examData.randomize_questions || false,
+          randomize_options: examData.randomize_options || false,
         });
 
         const { data: questionsData, error: questionsError } = await supabase
@@ -206,6 +212,8 @@ const CourseExamTab = ({ courseId }: CourseExamTabProps) => {
           passing_score: examFormData.passing_score,
           ordem: 1,
           ativo: examFormData.ativo,
+          randomize_questions: examFormData.randomize_questions,
+          randomize_options: examFormData.randomize_options,
         })
         .select()
         .single();
@@ -232,6 +240,8 @@ const CourseExamTab = ({ courseId }: CourseExamTabProps) => {
           descricao: examFormData.descricao || null,
           passing_score: examFormData.passing_score,
           ativo: examFormData.ativo,
+          randomize_questions: examFormData.randomize_questions,
+          randomize_options: examFormData.randomize_options,
         })
         .eq('id', exam.id);
 
@@ -496,6 +506,35 @@ const CourseExamTab = ({ courseId }: CourseExamTabProps) => {
                   />
                   <Label>Exame ativo</Label>
                 </div>
+                
+                <div className="space-y-3 border-t pt-4">
+                  <Label className="text-base font-semibold">Opções de Randomização</Label>
+                  
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={examFormData.randomize_questions}
+                      onChange={(e) => setExamFormData({ ...examFormData, randomize_questions: e.target.checked })}
+                      className="w-4 h-4"
+                    />
+                    <Label>Embaralhar ordem das perguntas</Label>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={examFormData.randomize_options}
+                      onChange={(e) => setExamFormData({ ...examFormData, randomize_options: e.target.checked })}
+                      className="w-4 h-4"
+                    />
+                    <Label>Embaralhar ordem das opções de resposta</Label>
+                  </div>
+                  
+                  <p className="text-xs text-muted-foreground">
+                    ⚠️ A randomização acontece uma vez no início do exame para cada aluno
+                  </p>
+                </div>
+                
                 <div className="flex gap-2">
                   <Button onClick={handleCreateExam} className="bg-primary">Criar Exame</Button>
                   <Button variant="outline" onClick={() => setShowExamSettings(false)}>Cancelar</Button>
@@ -656,6 +695,35 @@ const CourseExamTab = ({ courseId }: CourseExamTabProps) => {
               />
               <Label>Exame ativo</Label>
             </div>
+            
+            <div className="space-y-3 border-t pt-4">
+              <Label className="text-base font-semibold">Opções de Randomização</Label>
+              
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={examFormData.randomize_questions}
+                  onChange={(e) => setExamFormData({ ...examFormData, randomize_questions: e.target.checked })}
+                  className="w-4 h-4"
+                />
+                <Label>Embaralhar ordem das perguntas</Label>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={examFormData.randomize_options}
+                  onChange={(e) => setExamFormData({ ...examFormData, randomize_options: e.target.checked })}
+                  className="w-4 h-4"
+                />
+                <Label>Embaralhar ordem das opções de resposta</Label>
+              </div>
+              
+              <p className="text-xs text-muted-foreground">
+                ⚠️ A randomização acontece uma vez no início do exame para cada aluno
+              </p>
+            </div>
+            
             <div className="flex gap-2">
               <Button onClick={handleUpdateExam} className="bg-primary">Salvar</Button>
               <Button variant="outline" onClick={() => setShowExamSettings(false)}>Cancelar</Button>
