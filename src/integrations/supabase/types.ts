@@ -442,6 +442,7 @@ export type Database = {
           conteudo: string | null
           course_id: string | null
           created_at: string | null
+          exam_id: string | null
           id: number
           module_id: string | null
           ordem: number
@@ -455,6 +456,7 @@ export type Database = {
           conteudo?: string | null
           course_id?: string | null
           created_at?: string | null
+          exam_id?: string | null
           id?: number
           module_id?: string | null
           ordem: number
@@ -468,6 +470,7 @@ export type Database = {
           conteudo?: string | null
           course_id?: string | null
           created_at?: string | null
+          exam_id?: string | null
           id?: number
           module_id?: string | null
           ordem?: number
@@ -482,6 +485,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "slides_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "course_exams"
             referencedColumns: ["id"]
           },
           {

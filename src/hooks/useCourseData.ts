@@ -11,6 +11,7 @@ interface SlideData {
   ordem: number;
   module_id: string | null;
   course_id: string | null;
+  exam_id: string | null;
 }
 
 interface QuestionData {
@@ -40,6 +41,7 @@ interface TransformedSlideData {
     options: Array<{ text: string; correct: boolean }>;
     explanation: string | null;
   }> | null;
+  examId: string | null;
 }
 
 export const useCourseData = () => {
@@ -258,7 +260,8 @@ export const useCourseData = () => {
           question: q.question,
           options: q.options,
           explanation: null // Static exam questions don't have explanations
-        })) : null
+        })) : null,
+        examId: null // Static data doesn't have examId
       };
     }
 
@@ -281,7 +284,8 @@ export const useCourseData = () => {
       question: null,
       options: null,
       explanation: null,
-      examQuestions: null // Will be loaded separately in the component
+      examQuestions: null, // Will be loaded separately in the component
+      examId: slide.exam_id
     };
   };
 
@@ -304,23 +308,29 @@ export const useCourseData = () => {
     };
   };
 
-  const getExamQuestions = async () => {
-    console.log('📝 Buscando perguntas do exame final do banco...');
+  const getExamQuestions = async (examId?: string) => {
+    console.log('📝 Buscando perguntas do exame do banco...', examId || 'default');
     
     try {
-      // Buscar o exame do curso
-      const { data: courseExam, error: examError } = await supabase
-        .from('course_exams')
-        .select('id')
-        .eq('course_id', 'c7b3e4d5-6789-4abc-def0-123456789012') // ID do curso Expert eGestor
-        .single();
+      let targetExamId = examId;
+      
+      // Se não forneceu examId, buscar o exame padrão do curso (fallback para compatibilidade)
+      if (!examId) {
+        const { data: courseExam, error: examError } = await supabase
+          .from('course_exams')
+          .select('id')
+          .eq('course_id', '550e8400-e29b-41d4-a716-446655440000') // ID do curso Expert eGestor
+          .single();
 
-      if (examError || !courseExam) {
-        console.error('❌ Erro ao buscar exame:', examError);
-        return [];
+        if (examError || !courseExam) {
+          console.error('❌ Erro ao buscar exame padrão:', examError);
+          return [];
+        }
+        
+        targetExamId = courseExam.id;
       }
 
-      // Buscar perguntas do exame
+      // Buscar perguntas do exame específico
       const { data: examQuestions, error: questionsError } = await supabase
         .from('exam_questions')
         .select(`
@@ -334,7 +344,7 @@ export const useCourseData = () => {
             ordem
           )
         `)
-        .eq('exam_id', courseExam.id)
+        .eq('exam_id', targetExamId)
         .order('ordem', { ascending: true });
 
       if (questionsError) {

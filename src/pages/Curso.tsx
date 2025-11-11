@@ -169,9 +169,18 @@ const Curso = () => {
   const handleExamComplete = async (score: number, passed: boolean, answers: any[]) => {
     console.log('🎯 Exame completado:', score, 'passou:', passed);
     
+    // Buscar o examId do slide atual
+    const examId = currentContent?.examId;
+    
+    if (!examId) {
+      console.error('❌ examId não encontrado no slide atual');
+      toast.error('Erro ao identificar o exame. Tente novamente.');
+      return;
+    }
+
     // Salvar tentativa no banco de dados
     const result = await saveExamAttempt(
-      'c7b3e4d5-6789-4abc-def0-123456789012', // ID do exame do curso Expert eGestor
+      examId,
       score,
       passed,
       answers
@@ -264,7 +273,7 @@ const Curso = () => {
         return (
           <ExamSlide
             title={currentContent.title}
-            getExamQuestions={getExamQuestions}
+            getExamQuestions={() => getExamQuestions(currentContent.examId || undefined)}
             onExamComplete={handleExamComplete}
           />
         );

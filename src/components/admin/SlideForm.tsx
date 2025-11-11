@@ -18,22 +18,41 @@ interface SlideFormProps {
 
 const SlideForm = ({ moduleId, courseId, slideId, onSave, onCancel }: SlideFormProps) => {
   const [loading, setLoading] = useState(false);
+  const [exams, setExams] = useState<Array<{ id: string; titulo: string }>>([]);
   const [formData, setFormData] = useState({
     titulo: '',
     tipo: 'content',
     conteudo: '',
     video_url: '',
+    exam_id: '',
     ordem: 1,
     ativo: true,
   });
 
   useEffect(() => {
+    fetchExams();
     if (slideId) {
       fetchSlide();
     } else {
       fetchNextOrder();
     }
   }, [slideId, moduleId]);
+
+  const fetchExams = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('course_exams')
+        .select('id, titulo')
+        .eq('course_id', courseId)
+        .eq('ativo', true)
+        .order('ordem', { ascending: true });
+
+      if (error) throw error;
+      setExams(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar exames:', error);
+    }
+  };
 
   const fetchSlide = async () => {
     try {
@@ -50,6 +69,7 @@ const SlideForm = ({ moduleId, courseId, slideId, onSave, onCancel }: SlideFormP
         tipo: data.tipo,
         conteudo: data.conteudo || '',
         video_url: data.video_url || '',
+        exam_id: data.exam_id || '',
         ordem: data.ordem,
         ativo: data.ativo,
       });
@@ -88,6 +108,7 @@ const SlideForm = ({ moduleId, courseId, slideId, onSave, onCancel }: SlideFormP
         course_id: courseId,
         conteudo: formData.conteudo || null,
         video_url: formData.video_url || null,
+        exam_id: formData.exam_id || null,
       };
 
       if (slideId) {
@@ -149,6 +170,7 @@ const SlideForm = ({ moduleId, courseId, slideId, onSave, onCancel }: SlideFormP
                 <SelectItem value="video">Vídeo</SelectItem>
                 <SelectItem value="exercise">Exercício</SelectItem>
                 <SelectItem value="attention">Atenção</SelectItem>
+                <SelectItem value="exam">Exame</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -176,6 +198,36 @@ const SlideForm = ({ moduleId, courseId, slideId, onSave, onCancel }: SlideFormP
                 rows={6}
                 placeholder="Digite o conteúdo do slide..."
               />
+            </div>
+          )}
+
+          {formData.tipo === 'exam' && (
+            <div>
+              <Label htmlFor="exam_id">Selecione o Exame *</Label>
+              <Select
+                value={formData.exam_id}
+                onValueChange={(value) => setFormData({ ...formData, exam_id: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Escolha um exame" />
+                </SelectTrigger>
+                <SelectContent>
+                  {exams.length === 0 ? (
+                    <SelectItem value="" disabled>
+                      Nenhum exame disponível
+                    </SelectItem>
+                  ) : (
+                    exams.map((exam) => (
+                      <SelectItem key={exam.id} value={exam.id}>
+                        {exam.titulo}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground mt-1">
+                Crie exames na aba "Exame Final" antes de adicionar um slide de exame
+              </p>
             </div>
           )}
 
