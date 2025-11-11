@@ -204,7 +204,7 @@ export const useCourseData = () => {
       // Buscar progresso atual
       const { data: currentProgress } = await supabase
         .from('progresso_usuario')
-        .select('aulas_assistidas')
+        .select('aulas_assistidas, course_id')
         .eq('usuario_id', userId)
         .single();
 
@@ -216,11 +216,16 @@ export const useCourseData = () => {
         aulasAssistidas.push(slideNumber);
         console.log('➕ Adicionando slide', slideNumber, 'à lista de assistidas');
         
-        // Atualizar no banco
+        // Calcular progresso percentual (46 slides de conteúdo, exclui o exame)
+        const progressoPercentual = Math.round((aulasAssistidas.length / 46) * 100);
+        console.log('📊 Progresso percentual calculado:', progressoPercentual, '%');
+        
+        // Atualizar no banco com progresso percentual
         const { error } = await supabase
           .from('progresso_usuario')
           .update({
             aulas_assistidas: aulasAssistidas,
+            progresso_percentual: progressoPercentual,
             data_atualizacao: new Date().toISOString()
           })
           .eq('usuario_id', userId);
@@ -236,6 +241,7 @@ export const useCourseData = () => {
         } else {
           console.log('✅ Resposta salva com sucesso no banco para slide:', slideNumber);
           console.log('💾 Aulas assistidas salvas:', aulasAssistidas);
+          console.log('📈 Progresso atualizado:', progressoPercentual, '%');
         }
       } else {
         console.log('ℹ️ Slide', slideNumber, 'já estava marcado como respondido');

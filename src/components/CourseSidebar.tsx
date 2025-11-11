@@ -12,13 +12,20 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { useCourseData } from '@/hooks/useCourseData';
-import { Play, HelpCircle, AlertTriangle, FileText, Trophy } from 'lucide-react';
+import { Play, HelpCircle, AlertTriangle, FileText, Trophy, Lock } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const CourseSidebar = () => {
   const navigate = useNavigate();
-  const { slide } = useParams();
+  const { slide, courseId } = useParams();
   const currentSlide = parseInt(slide || '1');
-  const { slides, loading, useStaticData } = useCourseData();
+  const { slides, loading, useStaticData, answeredSlides } = useCourseData();
+
+  // Verificar se o exame está desbloqueado (todos os 46 slides anteriores completados)
+  const isExamUnlocked = () => {
+    const contentSlides = Array.from({ length: 46 }, (_, i) => i + 1);
+    return contentSlides.every(slideNum => answeredSlides.has(slideNum));
+  };
 
   const getSlideIcon = (type: string) => {
     switch (type) {
@@ -37,8 +44,11 @@ const CourseSidebar = () => {
     }
   };
 
-  const handleSlideClick = (slideOrder: number) => {
-    navigate(`/curso/${slideOrder}`);
+  const handleSlideClick = (slideOrder: number, isLocked: boolean) => {
+    if (isLocked) {
+      return; // Não permitir navegação para slides bloqueados
+    }
+    navigate(`/curso/${courseId}/${slideOrder}`);
   };
 
   if (loading) {
@@ -110,18 +120,23 @@ const CourseSidebar = () => {
               <SidebarGroupContent>
                 <SidebarMenu>
                   {group.slides.map((slideData) => {
-                    const Icon = getSlideIcon(slideData.tipo);
+                    const isExamSlide = slideData.ordem === 47;
+                    const isLocked = isExamSlide && !isExamUnlocked();
+                    const Icon = isLocked ? Lock : getSlideIcon(slideData.tipo);
                     const isActive = currentSlide === slideData.ordem;
                     
-                    return (
+                    const slideButton = (
                       <SidebarMenuItem key={slideData.id}>
                         <SidebarMenuButton
-                          onClick={() => handleSlideClick(slideData.ordem)}
+                          onClick={() => handleSlideClick(slideData.ordem, isLocked)}
                           className={`flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg transition-colors mx-2 ${
                             isActive 
                               ? 'bg-[#d61c00] text-white' 
+                              : isLocked
+                              ? 'opacity-40 cursor-not-allowed text-[#52555b]'
                               : 'hover:bg-gray-100 text-[#52555b]'
                           }`}
+                          disabled={isLocked}
                         >
                           <Icon className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" />
                           <div className="flex-1 text-left min-w-0">
@@ -137,6 +152,23 @@ const CourseSidebar = () => {
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     );
+
+                    if (isLocked) {
+                      return (
+                        <TooltipProvider key={slideData.id}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              {slideButton}
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">Complete todos os slides anteriores para desbloquear o exame</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      );
+                    }
+
+                    return slideButton;
                   })}
                 </SidebarMenu>
               </SidebarGroupContent>

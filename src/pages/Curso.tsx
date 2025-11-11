@@ -45,6 +45,13 @@ const Curso = () => {
   const totalSlides = getTotalSlidesCount();
   const currentContent = getSlideByOrder(currentSlide);
 
+  // Verificar se o exame está acessível (todas as 46 aulas anteriores completadas)
+  const isExamAccessible = () => {
+    // Slides 1-46 são conteúdo, 47 é o exame
+    const contentSlides = Array.from({ length: 46 }, (_, i) => i + 1);
+    return contentSlides.every(slideNum => answeredSlides.has(slideNum));
+  };
+
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
@@ -59,6 +66,20 @@ const Curso = () => {
       enrollUserInCourse(pendingCourseId, user.id);
     }
   }, [isAuthenticated, navigate, user]);
+
+  // Verificar acesso ao exame ao tentar acessar o slide 47
+  useEffect(() => {
+    if (currentSlide === 47 && currentContent?.type === 'exam' && !isExamAccessible()) {
+      console.log('🚫 Acesso ao exame bloqueado - nem todos os slides foram completados');
+      toast.error('Complete todos os slides anteriores para acessar o exame final.');
+      
+      // Encontrar o próximo slide não completado
+      const nextIncompleteSlide = Array.from({ length: 46 }, (_, i) => i + 1)
+        .find(slideNum => !answeredSlides.has(slideNum)) || 1;
+      
+      navigate(`/curso/${courseId}/${nextIncompleteSlide}`);
+    }
+  }, [currentSlide, currentContent?.type, answeredSlides, courseId, navigate]);
 
   const enrollUserInCourse = async (courseId: string, userId: string) => {
     try {
@@ -151,6 +172,12 @@ const Curso = () => {
 
     if (!canAdvance && currentContent?.type === 'exam') {
       toast.error("Você precisa completar o exame antes de continuar.");
+      return;
+    }
+
+    // Verificar se o próximo slide é o exame (47) e se está bloqueado
+    if (currentSlide === 46 && !isExamAccessible()) {
+      toast.error("Complete todos os slides anteriores para acessar o exame final.");
       return;
     }
 
