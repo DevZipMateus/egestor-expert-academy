@@ -8,25 +8,59 @@ import { BookOpen, Trophy, Clock, User, LogOut, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { supabase } from '@/integrations/supabase/client';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { role } = useUserRole(user?.email || null);
   const [progress, setProgress] = useState(0);
+  const [courseId] = useState('550e8400-e29b-41d4-a716-446655440000');
 
   useEffect(() => {
-    // Simular progresso do curso
-    setProgress(Math.floor(Math.random() * 100));
-  }, []);
+    const loadProgress = async () => {
+      if (!user?.id) return;
+      
+      const { data: progressData } = await supabase
+        .from('progresso_usuario')
+        .select('aulas_assistidas, progresso_percentual')
+        .eq('usuario_id', user.id)
+        .eq('course_id', courseId)
+        .maybeSingle();
+      
+      if (progressData) {
+        setProgress(progressData.progresso_percentual || 0);
+      }
+    };
+    
+    loadProgress();
+  }, [user, courseId]);
 
   const handleLogout = async () => {
     await signOut();
     navigate('/auth');
   };
 
-  const handleContinueCourse = () => {
-    navigate('/curso/1');
+  const handleContinueCourse = async () => {
+    if (!user?.id) return;
+    
+    // Buscar progresso do usuário
+    const { data: progressData } = await supabase
+      .from('progresso_usuario')
+      .select('aulas_assistidas')
+      .eq('usuario_id', user.id)
+      .eq('course_id', courseId)
+      .maybeSingle();
+    
+    // Se tem progresso, pegar o último slide assistido + 1, senão começar do slide 1
+    let nextSlide = 1;
+    if (progressData?.aulas_assistidas && progressData.aulas_assistidas.length > 0) {
+      const lastWatched = Math.max(...progressData.aulas_assistidas);
+      nextSlide = lastWatched + 1;
+    }
+    
+    // Navegar para o curso com courseId e slide corretos
+    navigate(`/curso/${courseId}/${nextSlide}`);
   };
 
   return (
