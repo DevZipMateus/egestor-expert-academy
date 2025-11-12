@@ -41,6 +41,7 @@ const SlideForm = ({ moduleId, courseId, slideId, onSave, onCancel }: SlideFormP
     tipo: 'content',
     conteudo: '',
     video_url: '',
+    image_url: '',
     exam_id: '',
     ordem: 1,
     ativo: true,
@@ -94,6 +95,7 @@ const SlideForm = ({ moduleId, courseId, slideId, onSave, onCancel }: SlideFormP
         tipo: data.tipo,
         conteudo: data.conteudo || '',
         video_url: data.video_url || '',
+        image_url: data.image_url || '',
         exam_id: data.exam_id || '',
         ordem: data.ordem,
         ativo: data.ativo,
@@ -263,6 +265,7 @@ const SlideForm = ({ moduleId, courseId, slideId, onSave, onCancel }: SlideFormP
         course_id: courseId,
         conteudo: formData.conteudo || null,
         video_url: formData.video_url || null,
+        image_url: formData.image_url || null,
         exam_id: formData.exam_id || null,
       };
 
@@ -390,7 +393,7 @@ const SlideForm = ({ moduleId, courseId, slideId, onSave, onCancel }: SlideFormP
             </div>
           )}
 
-          {(formData.tipo === 'content' || formData.tipo === 'attention') && (
+          {formData.tipo === 'content' && (
             <div>
               <Label htmlFor="conteudo">Conteúdo</Label>
               <Textarea
@@ -401,6 +404,34 @@ const SlideForm = ({ moduleId, courseId, slideId, onSave, onCancel }: SlideFormP
                 placeholder="Digite o conteúdo do slide..."
               />
             </div>
+          )}
+
+          {formData.tipo === 'attention' && (
+            <>
+              <div>
+                <Label htmlFor="conteudo">Conteúdo</Label>
+                <Textarea
+                  id="conteudo"
+                  value={formData.conteudo}
+                  onChange={(e) => setFormData({ ...formData, conteudo: e.target.value })}
+                  rows={4}
+                  placeholder="Digite o conteúdo do slide de atenção..."
+                />
+              </div>
+              <div>
+                <Label htmlFor="image_url">URL da Imagem (opcional)</Label>
+                <Input
+                  id="image_url"
+                  type="url"
+                  value={formData.image_url}
+                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                  placeholder="https://exemplo.com/imagem.png"
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  A imagem aparecerá centralizada no slide
+                </p>
+              </div>
+            </>
           )}
 
           {formData.tipo === 'exam' && (

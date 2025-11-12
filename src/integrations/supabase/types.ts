@@ -453,6 +453,7 @@ export type Database = {
           created_at: string | null
           exam_id: string | null
           id: number
+          image_url: string | null
           module_id: string | null
           ordem: number
           tipo: string
@@ -467,6 +468,7 @@ export type Database = {
           created_at?: string | null
           exam_id?: string | null
           id?: number
+          image_url?: string | null
           module_id?: string | null
           ordem: number
           tipo: string
@@ -481,6 +483,7 @@ export type Database = {
           created_at?: string | null
           exam_id?: string | null
           id?: number
+          image_url?: string | null
           module_id?: string | null
           ordem?: number
           tipo?: string

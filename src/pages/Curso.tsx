@@ -347,6 +347,7 @@ const Curso = () => {
           <AttentionSlide
             title={currentContent.title}
             content={currentContent.content || 'Preste atenção nas próximas informações importantes.'}
+            imageUrl={currentContent.imageUrl}
           />
         );
       

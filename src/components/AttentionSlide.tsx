@@ -5,9 +5,10 @@ import { AlertTriangle } from 'lucide-react';
 interface AttentionSlideProps {
   title: string;
   content: string;
+  imageUrl?: string;
 }
 
-const AttentionSlide: React.FC<AttentionSlideProps> = ({ title, content }) => {
+const AttentionSlide: React.FC<AttentionSlideProps> = ({ title, content, imageUrl }) => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-center space-x-4">
@@ -19,7 +20,16 @@ const AttentionSlide: React.FC<AttentionSlideProps> = ({ title, content }) => {
       </div>
       
       <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-8 shadow-lg border-2 border-[#d61c00]">
-        <div className="text-center">
+        <div className="text-center space-y-6">
+          {imageUrl && (
+            <div className="flex justify-center">
+              <img 
+                src={imageUrl} 
+                alt={title}
+                className="max-w-full h-auto max-h-96 rounded-lg shadow-md"
+              />
+            </div>
+          )}
           <p className="text-lg text-[#52555b] font-opensans leading-relaxed">
             {content}
           </p>

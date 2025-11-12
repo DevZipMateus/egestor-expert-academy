@@ -18,6 +18,7 @@ interface SlideData {
   tipo: string;
   conteudo: string | null;
   video_url: string | null;
+  image_url: string | null;
   ordem: number;
   module_id: string | null;
   course_id: string | null;
@@ -43,6 +44,7 @@ interface TransformedSlideData {
   type: string;
   content: string | null;
   videoUrl: string | null;
+  imageUrl: string | null;
   question: string | null;
   options: Array<{ text: string; correct: boolean }> | null;
   explanation: string | null;
@@ -270,6 +272,7 @@ export const useCourseData = () => {
         type: staticSlide.type,
         content: staticSlide.content || null,
         videoUrl: staticSlide.videoUrl || null,
+        imageUrl: null,
         question: staticSlide.question || null,
         options: staticSlide.options || null,
         explanation: staticSlide.explanation || null,
@@ -299,6 +302,7 @@ export const useCourseData = () => {
       type: slide.tipo,
       content: slide.conteudo,
       videoUrl: slide.video_url,
+      imageUrl: slide.image_url,
       question: null,
       options: null,
       explanation: null,
