@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Edit, Trash2, Video, FileText, AlertCircle, GripVertical } from 'lucide-react';
+import { Plus, Edit, Trash2, Video, FileText, AlertCircle, GripVertical, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import SlideForm from './SlideForm';
+import { Badge } from '@/components/ui/badge';
 import {
   DndContext,
   closestCenter,
@@ -31,6 +32,7 @@ interface Slide {
   ativo: boolean;
   video_url: string | null;
   conteudo: string | null;
+  question_count?: number;
 }
 
 interface SortableSlideItemProps {
@@ -39,9 +41,10 @@ interface SortableSlideItemProps {
   onDelete: () => void;
   getSlideIcon: (tipo: string) => JSX.Element;
   getSlideTypeLabel: (tipo: string) => string;
+  getQuestionBadge: (slide: Slide) => JSX.Element | null;
 }
 
-const SortableSlideItem = ({ slide, onEdit, onDelete, getSlideIcon, getSlideTypeLabel }: SortableSlideItemProps) => {
+const SortableSlideItem = ({ slide, onEdit, onDelete, getSlideIcon, getSlideTypeLabel, getQuestionBadge }: SortableSlideItemProps) => {
   const {
     attributes,
     listeners,
@@ -71,7 +74,10 @@ const SortableSlideItem = ({ slide, onEdit, onDelete, getSlideIcon, getSlideType
             </div>
             {getSlideIcon(slide.tipo)}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{slide.titulo}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium truncate">{slide.titulo}</p>
+                {getQuestionBadge(slide)}
+              </div>
               <p className="text-xs text-muted-foreground">
                 {getSlideTypeLabel(slide.tipo)} · Ordem: {slide.ordem}
               </p>
@@ -132,7 +138,22 @@ const ModuleSlides = ({ moduleId, courseId }: ModuleSlidesProps) => {
         .order('ordem');
 
       if (error) throw error;
-      setSlides(data || []);
+
+      // Buscar contagem de perguntas para slides de exercício
+      const slidesWithCounts = await Promise.all(
+        (data || []).map(async (slide) => {
+          if (slide.tipo === 'exercise') {
+            const { count } = await supabase
+              .from('questions')
+              .select('*', { count: 'exact', head: true })
+              .eq('slide_id', slide.id);
+            return { ...slide, question_count: count || 0 };
+          }
+          return slide;
+        })
+      );
+
+      setSlides(slidesWithCounts);
     } catch (error) {
       console.error('Erro ao buscar slides:', error);
       toast.error('Erro ao carregar slides');
@@ -217,8 +238,31 @@ const ModuleSlides = ({ moduleId, courseId }: ModuleSlidesProps) => {
       exercise: 'Exercício',
       attention: 'Atenção',
       content: 'Conteúdo',
+      exam: 'Exame',
     };
     return labels[tipo] || tipo;
+  };
+
+  const getQuestionBadge = (slide: Slide) => {
+    if (slide.tipo !== 'exercise') return null;
+
+    const count = slide.question_count || 0;
+    
+    if (count === 0) {
+      return (
+        <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20">
+          <AlertCircle className="w-3 h-3 mr-1" />
+          Sem perguntas
+        </Badge>
+      );
+    }
+
+    return (
+      <Badge variant="secondary" className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20">
+        <CheckCircle2 className="w-3 h-3 mr-1" />
+        {count} {count === 1 ? 'pergunta' : 'perguntas'}
+      </Badge>
+    );
   };
 
   if (showSlideForm) {
@@ -286,6 +330,7 @@ const ModuleSlides = ({ moduleId, courseId }: ModuleSlidesProps) => {
                   onDelete={() => handleDeleteSlide(slide.id)}
                   getSlideIcon={getSlideIcon}
                   getSlideTypeLabel={getSlideTypeLabel}
+                  getQuestionBadge={getQuestionBadge}
                 />
               ))}
             </div>
