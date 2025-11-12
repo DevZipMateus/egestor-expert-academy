@@ -10,7 +10,6 @@ import { toast } from 'sonner';
 import ModuleForm from './ModuleForm';
 import CourseOverviewTab from './CourseOverviewTab';
 import ModuleSlides from './ModuleSlides';
-import ModuleQuestions from './ModuleQuestions';
 import CourseExamTab from './CourseExamTab';
 import CourseCertificatesTab from './CourseCertificatesTab';
 import CourseMetricsTab from './CourseMetricsTab';
@@ -317,18 +316,7 @@ const CourseDetails = ({ course, onBack }: CourseDetailsProps) => {
 
                       {expandedModules.has(module.id) && (
                         <div className="mt-4">
-                          <Tabs defaultValue="slides" className="w-full">
-                            <TabsList className="grid w-full grid-cols-2">
-                              <TabsTrigger value="slides">Slides</TabsTrigger>
-                              <TabsTrigger value="questions">Perguntas</TabsTrigger>
-                            </TabsList>
-                            <TabsContent value="slides" className="mt-4">
-                              <ModuleSlides moduleId={module.id} courseId={course.id} />
-                            </TabsContent>
-                            <TabsContent value="questions" className="mt-4">
-                              <ModuleQuestions moduleId={module.id} courseId={course.id} />
-                            </TabsContent>
-                          </Tabs>
+                          <ModuleSlides moduleId={module.id} courseId={course.id} />
                         </div>
                       )}
                     </CardContent>
