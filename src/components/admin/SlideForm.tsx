@@ -36,6 +36,8 @@ const SlideForm = ({ moduleId, courseId, slideId, onSave, onCancel }: SlideFormP
   const [loading, setLoading] = useState(false);
   const [exams, setExams] = useState<Array<{ id: string; titulo: string }>>([]);
   const [questions, setQuestions] = useState<ExerciseQuestion[]>([]);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
   const [formData, setFormData] = useState({
     titulo: '',
     tipo: 'content',
@@ -100,6 +102,11 @@ const SlideForm = ({ moduleId, courseId, slideId, onSave, onCancel }: SlideFormP
         ordem: data.ordem,
         ativo: data.ativo,
       });
+      
+      // Set preview if image exists
+      if (data.image_url) {
+        setImagePreview(data.image_url);
+      }
     } catch (error) {
       console.error('Erro ao buscar slide:', error);
       toast.error('Erro ao carregar slide');
@@ -214,6 +221,38 @@ const SlideForm = ({ moduleId, courseId, slideId, onSave, onCancel }: SlideFormP
     setQuestions(updated);
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor, selecione apenas arquivos de imagem');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('A imagem deve ter no máximo 5MB');
+      return;
+    }
+
+    setSelectedImage(file);
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+    setImagePreview('');
+    setFormData({ ...formData, image_url: '' });
+  };
+
   const validateExercise = () => {
     if (formData.tipo !== 'exercise') return true;
 
@@ -259,13 +298,48 @@ const SlideForm = ({ moduleId, courseId, slideId, onSave, onCancel }: SlideFormP
     setLoading(true);
 
     try {
+      let uploadedImageUrl = formData.image_url;
+
+      // Upload new image if selected
+      if (selectedImage) {
+        const fileExt = selectedImage.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('slide-images')
+          .upload(filePath, selectedImage, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (uploadError) throw uploadError;
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('slide-images')
+          .getPublicUrl(filePath);
+
+        uploadedImageUrl = publicUrl;
+
+        // Delete old image if exists and is from our storage
+        if (formData.image_url && formData.image_url.includes('slide-images')) {
+          const oldPath = formData.image_url.split('/slide-images/').pop();
+          if (oldPath) {
+            await supabase.storage
+              .from('slide-images')
+              .remove([oldPath]);
+          }
+        }
+      }
+
       const slideData = {
         ...formData,
         module_id: moduleId,
         course_id: courseId,
         conteudo: formData.conteudo || null,
         video_url: formData.video_url || null,
-        image_url: formData.image_url || null,
+        image_url: uploadedImageUrl || null,
         exam_id: formData.exam_id || null,
       };
 
@@ -418,18 +492,41 @@ const SlideForm = ({ moduleId, courseId, slideId, onSave, onCancel }: SlideFormP
                   placeholder="Digite o conteúdo do slide de atenção..."
                 />
               </div>
-              <div>
-                <Label htmlFor="image_url">URL da Imagem (opcional)</Label>
+              <div className="space-y-2">
+                <Label htmlFor="image_upload">Imagem (opcional)</Label>
                 <Input
-                  id="image_url"
-                  type="url"
-                  value={formData.image_url}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                  placeholder="https://exemplo.com/imagem.png"
+                  id="image_upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="cursor-pointer"
                 />
-                <p className="text-sm text-muted-foreground mt-1">
-                  A imagem aparecerá centralizada no slide
+                <p className="text-sm text-muted-foreground">
+                  A imagem aparecerá centralizada no slide. Máximo 5MB.
                 </p>
+                
+                {imagePreview && (
+                  <div className="relative mt-4 border rounded-lg p-4 bg-muted/20">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium">Preview:</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={removeImage}
+                        className="h-8"
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Remover
+                      </Button>
+                    </div>
+                    <img 
+                      src={imagePreview} 
+                      alt="Preview"
+                      className="max-w-full h-auto max-h-64 rounded-lg mx-auto"
+                    />
+                  </div>
+                )}
               </div>
             </>
           )}
