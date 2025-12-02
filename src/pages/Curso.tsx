@@ -469,18 +469,27 @@ const Curso = () => {
               </Button>
 
               <div className="flex space-x-1 md:space-x-2 order-1 sm:order-2 overflow-x-auto pb-2 sm:pb-0">
-                {Array.from({ length: Math.min(totalSlides, 10) }, (_, index) => {
-                  const slideNumber = Math.floor((currentSlide - 1) / 10) * 10 + index + 1;
-                  if (slideNumber > totalSlides) return null;
-                  return (
-                    <div
-                      key={slideNumber}
-                      className={`w-2 h-2 md:w-3 md:h-3 rounded-full flex-shrink-0 ${
-                        slideNumber === currentSlide ? 'bg-[#d61c00]' : 'bg-gray-300'
-                      }`}
-                    />
-                  );
-                })}
+                {(() => {
+                  // Filtrar apenas slides de conteúdo (ordem >= 1)
+                  const contentSlides = slides.filter(s => s.ordem >= 1).sort((a, b) => a.ordem - b.ordem);
+                  const totalContent = contentSlides.length;
+                  const currentContentIndex = contentSlides.findIndex(s => s.ordem === currentSlide);
+                  const currentPage = currentContentIndex >= 0 ? Math.floor(currentContentIndex / 10) : 0;
+                  
+                  return Array.from({ length: Math.min(totalContent, 10) }, (_, index) => {
+                    const slideIndex = currentPage * 10 + index;
+                    if (slideIndex >= totalContent) return null;
+                    const isActive = slideIndex === currentContentIndex;
+                    return (
+                      <div
+                        key={slideIndex}
+                        className={`w-2 h-2 md:w-3 md:h-3 rounded-full flex-shrink-0 ${
+                          isActive ? 'bg-[#d61c00]' : 'bg-gray-300'
+                        }`}
+                      />
+                    );
+                  });
+                })()}
               </div>
 
               <Button
