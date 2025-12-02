@@ -525,7 +525,7 @@ const Curso = () => {
                               ? 'bg-[#d61c00] scale-125' 
                               : canNavigate 
                                 ? 'bg-gray-500 hover:bg-gray-600 cursor-pointer' 
-                                : 'bg-gray-300 cursor-not-allowed'
+                                : 'bg-transparent border border-gray-400 cursor-not-allowed opacity-60'
                           }`}
                           title={canNavigate ? `Ir para slide ${targetSlide.ordem}` : 'Complete os slides anteriores'}
                         />
