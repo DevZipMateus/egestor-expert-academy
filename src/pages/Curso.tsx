@@ -499,7 +499,7 @@ const Curso = () => {
                 <span className="text-sm md:text-base text-[#52555b] font-opensans whitespace-nowrap">
                   {currentSlide >= 1 ? `${currentSlide} de ${totalSlides}` : 'Introdução'}
                 </span>
-                <div className="flex space-x-1 overflow-x-auto max-w-[200px] md:max-w-[350px] pb-2 sm:pb-0 scrollbar-thin">
+                <div className="flex space-x-1 overflow-x-auto max-w-[200px] md:max-w-[350px] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   {(() => {
                     // Filtrar apenas slides de conteúdo (ordem >= 1, excluindo exame que é o último)
                     const contentSlides = slides
