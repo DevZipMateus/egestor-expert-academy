@@ -12,25 +12,27 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { useCourseData } from '@/hooks/useCourseData';
-import { Play, HelpCircle, AlertTriangle, FileText, Trophy, Lock } from 'lucide-react';
+import { Play, HelpCircle, AlertTriangle, FileText, Trophy, Lock, BookOpen } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 
 const CourseSidebar = () => {
   const navigate = useNavigate();
   const { slide, courseId } = useParams();
-  const currentSlide = parseInt(slide || '1');
+  const currentSlide = parseInt(slide || '0');
   const { slides, loading, useStaticData, answeredSlides } = useCourseData();
 
-  // Verificar se o exame está desbloqueado (todos os 46 slides anteriores completados)
+  // Verificar se o exame está desbloqueado (todos os 43 slides de conteúdo completados)
   const isExamUnlocked = () => {
-    const contentSlides = Array.from({ length: 46 }, (_, i) => i + 1);
+    const contentSlides = Array.from({ length: 43 }, (_, i) => i + 1);
     return contentSlides.every(slideNum => answeredSlides.has(slideNum));
   };
 
-  const getSlideIcon = (type: string) => {
+  const getSlideIcon = (type: string, isIntro: boolean = false) => {
+    if (isIntro) return BookOpen;
     switch (type) {
       case 'content':
+      case 'video':
         return Play;
       case 'exercise':
         return HelpCircle;
@@ -66,40 +68,39 @@ const CourseSidebar = () => {
     );
   }
 
-  const organizeSlidesByRange = (slidesList: typeof slides) => {
-    return [
-      {
-        name: 'Clientes e Fornecedores',
-        slides: slidesList.filter(s => s.ordem >= 1 && s.ordem <= 3)
-      },
-      {
-        name: 'Produtos e Estoque',
-        slides: slidesList.filter(s => s.ordem >= 4 && s.ordem <= 7)
-      },
-      {
-        name: 'Vendas e Pagamentos',
-        slides: slidesList.filter(s => s.ordem >= 8 && s.ordem <= 25)
-      },
-      {
-        name: 'Compras e Fiscal',
-        slides: slidesList.filter(s => s.ordem >= 26 && s.ordem <= 30)
-      },
-      {
-        name: 'Configurações Avançadas',
-        slides: slidesList.filter(s => s.ordem >= 31 && s.ordem <= 46)
-      },
-      {
-        name: 'Exame Final',
-        slides: slidesList.filter(s => s.ordem === 47)
+  // Agrupar slides por módulo real
+  const organizeSlidesByModule = (slidesList: typeof slides) => {
+    const moduleGroups: Record<string, { name: string; ordem: number; slides: typeof slides }> = {};
+    
+    slidesList.forEach(slideData => {
+      const moduleName = slideData.modules?.titulo || 'Sem Módulo';
+      const moduleOrdem = slideData.modules?.ordem || 0;
+      
+      if (!moduleGroups[moduleName]) {
+        moduleGroups[moduleName] = {
+          name: moduleName,
+          ordem: moduleOrdem,
+          slides: []
+        };
       }
-    ].filter(group => group.slides.length > 0);
+      moduleGroups[moduleName].slides.push(slideData);
+    });
+
+    // Ordenar grupos por ordem do módulo e slides dentro de cada grupo
+    return Object.values(moduleGroups)
+      .sort((a, b) => a.ordem - b.ordem)
+      .map(group => ({
+        ...group,
+        slides: group.slides.sort((a, b) => a.ordem - b.ordem)
+      }));
   };
 
-  const slideGroups = organizeSlidesByRange(slides);
+  const slideGroups = organizeSlidesByModule(slides);
 
-  // Calcular progresso (excluindo o exame - slide 47)
-  const totalContentSlides = 46;
-  const completedSlides = Array.from(answeredSlides).filter(slide => slide <= 46).length;
+  // Calcular progresso (excluindo introdução e exame)
+  // Slides de conteúdo: ordem 1-43, Exame: ordem 44, Introdução: ordem 0
+  const totalContentSlides = 43;
+  const completedSlides = Array.from(answeredSlides).filter(s => s >= 1 && s <= 43).length;
   const progressPercentage = Math.round((completedSlides / totalContentSlides) * 100);
 
   return (
@@ -142,10 +143,25 @@ const CourseSidebar = () => {
               <SidebarGroupContent>
                 <SidebarMenu>
                   {group.slides.map((slideData) => {
-                    const isExamSlide = slideData.ordem === 47;
+                    const isIntroSlide = slideData.ordem === 0;
+                    const isExamSlide = slideData.tipo === 'exam';
                     const isLocked = isExamSlide && !isExamUnlocked();
-                    const Icon = isLocked ? Lock : getSlideIcon(slideData.tipo);
+                    const Icon = isLocked ? Lock : getSlideIcon(slideData.tipo, isIntroSlide);
                     const isActive = currentSlide === slideData.ordem;
+                    
+                    // Definir label baseado no tipo
+                    const getSlideLabel = () => {
+                      if (isIntroSlide) return 'Introdução';
+                      if (slideData.tipo === 'exercise') return 'Exercício';
+                      if (slideData.tipo === 'attention') return 'Atenção';
+                      if (slideData.tipo === 'exam') return 'Exame Final';
+                      return 'Aula';
+                    };
+
+                    // Não mostrar número para slides de introdução
+                    const slideLabel = isIntroSlide 
+                      ? getSlideLabel()
+                      : `${slideData.ordem}. ${getSlideLabel()}`;
                     
                     const slideButton = (
                       <SidebarMenuItem key={slideData.id}>
@@ -163,9 +179,7 @@ const CourseSidebar = () => {
                           <Icon className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" />
                           <div className="flex-1 text-left min-w-0">
                             <div className="text-xs md:text-sm font-medium truncate">
-                              {slideData.ordem}. {slideData.tipo === 'exercise' ? 'Exercício' : 
-                               slideData.tipo === 'attention' ? 'Atenção' :
-                               slideData.tipo === 'exam' ? 'Exame' : 'Aula'}
+                              {slideLabel}
                             </div>
                             <div className="text-xs opacity-75 truncate">
                               {slideData.titulo}
