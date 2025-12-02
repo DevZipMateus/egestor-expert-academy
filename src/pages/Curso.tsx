@@ -216,11 +216,7 @@ const Curso = () => {
     setExerciseAnswered(true);
     setCanAdvance(true);
     
-    if (correct) {
-      toast.success("Resposta correta! 🎉");
-    } else {
-      toast.error("Resposta incorreta. Revise o conteúdo.");
-    }
+    // Feedback visual já é mostrado no próprio componente de exercício
     
     console.log('✅ Navegação liberada após resposta para slide:', currentSlide);
   };
