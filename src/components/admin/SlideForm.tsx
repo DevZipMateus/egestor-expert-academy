@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Plus, Trash2, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, AlertCircle, Upload } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface SlideFormProps {
@@ -38,6 +38,7 @@ const SlideForm = ({ moduleId, courseId, slideId, onSave, onCancel }: SlideFormP
   const [questions, setQuestions] = useState<ExerciseQuestion[]>([]);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
+  const [isDragging, setIsDragging] = useState(false);
   const [formData, setFormData] = useState({
     titulo: '',
     tipo: 'content',
@@ -221,10 +222,7 @@ const SlideForm = ({ moduleId, courseId, slideId, onSave, onCancel }: SlideFormP
     setQuestions(updated);
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const processImageFile = (file: File) => {
     // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error('Por favor, selecione apenas arquivos de imagem');
@@ -245,6 +243,39 @@ const SlideForm = ({ moduleId, courseId, slideId, onSave, onCancel }: SlideFormP
       setImagePreview(reader.result as string);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processImageFile(file);
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      processImageFile(files[0]);
+    }
   };
 
   const removeImage = () => {
@@ -493,20 +524,36 @@ const SlideForm = ({ moduleId, courseId, slideId, onSave, onCancel }: SlideFormP
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="image_upload">Imagem (opcional)</Label>
-                <Input
-                  id="image_upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="cursor-pointer"
-                />
-                <p className="text-sm text-muted-foreground">
-                  A imagem aparecerá centralizada no slide. Máximo 5MB.
-                </p>
+                <Label>Imagem (opcional)</Label>
                 
-                {imagePreview && (
-                  <div className="relative mt-4 border rounded-lg p-4 bg-muted/20">
+                {!imagePreview ? (
+                  <div
+                    onDragEnter={handleDragEnter}
+                    onDragLeave={handleDragLeave}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
+                      isDragging 
+                        ? 'border-primary bg-primary/10' 
+                        : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
+                    }`}
+                  >
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    <Upload className={`w-10 h-10 mx-auto mb-3 ${isDragging ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <p className={`text-sm font-medium ${isDragging ? 'text-primary' : 'text-foreground'}`}>
+                      {isDragging ? 'Solte a imagem aqui' : 'Arraste uma imagem ou clique para selecionar'}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      PNG, JPG ou WEBP • Máximo 5MB
+                    </p>
+                  </div>
+                ) : (
+                  <div className="relative border rounded-lg p-4 bg-muted/20">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium">Preview:</span>
                       <Button
