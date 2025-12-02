@@ -332,6 +332,7 @@ export type Database = {
           data_atualizacao: string | null
           id: string
           progresso_percentual: number | null
+          respostas_exercicios: Json | null
           started_at: string | null
           usuario_id: string
         }
@@ -342,6 +343,7 @@ export type Database = {
           data_atualizacao?: string | null
           id?: string
           progresso_percentual?: number | null
+          respostas_exercicios?: Json | null
           started_at?: string | null
           usuario_id: string
         }
@@ -352,6 +354,7 @@ export type Database = {
           data_atualizacao?: string | null
           id?: string
           progresso_percentual?: number | null
+          respostas_exercicios?: Json | null
           started_at?: string | null
           usuario_id?: string
         }

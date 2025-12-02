@@ -61,6 +61,11 @@ interface TransformedSlideData {
   timeLimit: number | null;
 }
 
+interface ExerciseAnswer {
+  selectedOption: number;
+  correct: boolean;
+}
+
 export const useCourseData = () => {
   const [slides, setSlides] = useState<SlideData[]>([]);
   const [questions, setQuestions] = useState<QuestionData[]>([]);
@@ -68,6 +73,7 @@ export const useCourseData = () => {
   const [error, setError] = useState<string | null>(null);
   const [useStaticData, setUseStaticData] = useState(false);
   const [answeredSlides, setAnsweredSlides] = useState<Set<number>>(new Set());
+  const [exerciseAnswers, setExerciseAnswers] = useState<Record<number, ExerciseAnswer>>({});
 
   useEffect(() => {
     loadCourseData();
@@ -179,7 +185,7 @@ export const useCourseData = () => {
       
       const { data: progressData } = await supabase
         .from('progresso_usuario')
-        .select('aulas_assistidas')
+        .select('aulas_assistidas, respostas_exercicios')
         .eq('usuario_id', userId)
         .single();
 
@@ -191,12 +197,24 @@ export const useCourseData = () => {
       } else {
         console.log('ℹ️ Nenhum slide respondido encontrado');
       }
+
+      // Carregar respostas de exercícios
+      if (progressData?.respostas_exercicios) {
+        const savedAnswers = progressData.respostas_exercicios as unknown as Record<string, ExerciseAnswer>;
+        // Converter chaves string para number
+        const answersWithNumberKeys: Record<number, ExerciseAnswer> = {};
+        Object.entries(savedAnswers).forEach(([key, value]) => {
+          answersWithNumberKeys[parseInt(key)] = value;
+        });
+        setExerciseAnswers(answersWithNumberKeys);
+        console.log('✅ Respostas de exercícios carregadas:', Object.keys(answersWithNumberKeys).length);
+      }
     } catch (error) {
       console.error('❌ Erro ao carregar slides respondidos:', error);
     }
   };
 
-  const markSlideAsAnswered = async (slideNumber: number) => {
+  const markSlideAsAnswered = async (slideNumber: number, answer?: { selectedOption: number; correct: boolean }) => {
     try {
       console.log('💾 Iniciando salvamento da resposta do slide:', slideNumber);
 
@@ -213,15 +231,30 @@ export const useCourseData = () => {
         return newSet;
       });
 
+      // Atualizar respostas de exercícios localmente se fornecido
+      if (answer) {
+        setExerciseAnswers(prev => ({
+          ...prev,
+          [slideNumber]: answer
+        }));
+      }
+
       // Buscar progresso atual
       const { data: currentProgress } = await supabase
         .from('progresso_usuario')
-        .select('aulas_assistidas, course_id')
+        .select('aulas_assistidas, course_id, respostas_exercicios')
         .eq('usuario_id', userId)
         .single();
 
       const aulasAssistidas = currentProgress?.aulas_assistidas || [];
+      const respostasExercicios = (currentProgress?.respostas_exercicios as unknown as Record<string, ExerciseAnswer>) || {};
+      
       console.log('📊 Aulas assistidas atuais:', aulasAssistidas);
+      
+      // Preparar dados para atualização
+      const updateData: any = {
+        data_atualizacao: new Date().toISOString()
+      };
       
       // Adicionar o slide se não estiver na lista
       if (!aulasAssistidas.includes(slideNumber)) {
@@ -232,31 +265,40 @@ export const useCourseData = () => {
         const progressoPercentual = Math.round((aulasAssistidas.length / 43) * 100);
         console.log('📊 Progresso percentual calculado:', progressoPercentual, '%');
         
-        // Atualizar no banco com progresso percentual
-        const { error } = await supabase
-          .from('progresso_usuario')
-          .update({
-            aulas_assistidas: aulasAssistidas,
-            progresso_percentual: progressoPercentual,
-            data_atualizacao: new Date().toISOString()
-          })
-          .eq('usuario_id', userId);
+        updateData.aulas_assistidas = aulasAssistidas;
+        updateData.progresso_percentual = progressoPercentual;
+      }
 
-        if (error) {
-          console.error('❌ Erro ao salvar resposta no banco:', error);
-          // Reverter estado local em caso de erro
-          setAnsweredSlides(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(slideNumber);
-            return newSet;
+      // Salvar resposta do exercício se fornecida
+      if (answer) {
+        respostasExercicios[slideNumber.toString()] = answer;
+        updateData.respostas_exercicios = respostasExercicios;
+        console.log('💾 Salvando resposta do exercício:', slideNumber, answer);
+      }
+        
+      // Atualizar no banco
+      const { error } = await supabase
+        .from('progresso_usuario')
+        .update(updateData)
+        .eq('usuario_id', userId);
+
+      if (error) {
+        console.error('❌ Erro ao salvar resposta no banco:', error);
+        // Reverter estado local em caso de erro
+        setAnsweredSlides(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(slideNumber);
+          return newSet;
+        });
+        if (answer) {
+          setExerciseAnswers(prev => {
+            const newAnswers = { ...prev };
+            delete newAnswers[slideNumber];
+            return newAnswers;
           });
-        } else {
-          console.log('✅ Resposta salva com sucesso no banco para slide:', slideNumber);
-          console.log('💾 Aulas assistidas salvas:', aulasAssistidas);
-          console.log('📈 Progresso atualizado:', progressoPercentual, '%');
         }
       } else {
-        console.log('ℹ️ Slide', slideNumber, 'já estava marcado como respondido');
+        console.log('✅ Resposta salva com sucesso no banco para slide:', slideNumber);
       }
     } catch (error) {
       console.error('❌ Erro crítico ao marcar slide como respondido:', error);
@@ -267,6 +309,10 @@ export const useCourseData = () => {
         return newSet;
       });
     }
+  };
+
+  const getExerciseAnswer = (slideNumber: number): ExerciseAnswer | null => {
+    return exerciseAnswers[slideNumber] || null;
   };
 
   const getSlideByOrder = (order: number): TransformedSlideData | null => {
@@ -520,12 +566,14 @@ export const useCourseData = () => {
     error,
     useStaticData,
     answeredSlides,
+    exerciseAnswers,
     getSlideByOrder,
     getQuestionBySlideId,
     getTotalSlidesCount,
     getExamQuestions,
     getExamTimeLimit,
     saveExamAttempt,
-    markSlideAsAnswered
+    markSlideAsAnswered,
+    getExerciseAnswer
   };
 };

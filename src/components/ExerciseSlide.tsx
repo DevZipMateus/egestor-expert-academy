@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Check, X } from "lucide-react";
 
@@ -10,13 +10,27 @@ interface ExerciseSlideProps {
     correct: boolean;
   }[];
   explanation?: string;
-  onAnswer: (correct: boolean) => void;
+  savedAnswer?: { selectedOption: number; correct: boolean } | null;
+  onAnswer: (correct: boolean, selectedOption: number) => void;
 }
 
-const ExerciseSlide: React.FC<ExerciseSlideProps> = ({ title, question, options, explanation, onAnswer }) => {
-  const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  const [showResult, setShowResult] = useState(false);
-  const [answered, setAnswered] = useState(false);
+const ExerciseSlide: React.FC<ExerciseSlideProps> = ({ title, question, options, explanation, savedAnswer, onAnswer }) => {
+  const [selectedOption, setSelectedOption] = useState<number | null>(savedAnswer?.selectedOption ?? null);
+  const [showResult, setShowResult] = useState(!!savedAnswer);
+  const [answered, setAnswered] = useState(!!savedAnswer);
+
+  // Atualizar estado quando savedAnswer mudar (navegação entre slides)
+  useEffect(() => {
+    if (savedAnswer) {
+      setSelectedOption(savedAnswer.selectedOption);
+      setShowResult(true);
+      setAnswered(true);
+    } else {
+      setSelectedOption(null);
+      setShowResult(false);
+      setAnswered(false);
+    }
+  }, [savedAnswer, question]); // Reset quando a pergunta mudar
 
   const handleOptionSelect = (index: number) => {
     if (answered) return;
@@ -33,9 +47,9 @@ const ExerciseSlide: React.FC<ExerciseSlideProps> = ({ title, question, options,
     setShowResult(true);
     setAnswered(true);
     
-    // Chama onAnswer imediatamente após definir os estados
-    onAnswer(isCorrect);
-    console.log('✅ onAnswer chamado com:', isCorrect);
+    // Chama onAnswer com a opção selecionada
+    onAnswer(isCorrect, selectedOption);
+    console.log('✅ onAnswer chamado com:', isCorrect, selectedOption);
   };
 
   const getOptionStyle = (index: number) => {
