@@ -57,7 +57,12 @@ const Curso = () => {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      navigate('/login');
+      // Salvar curso e slide pendentes para redirecionar após login
+      if (courseId) {
+        localStorage.setItem('pendingCourseId', courseId);
+        localStorage.setItem('pendingSlideNumber', slide || '1');
+      }
+      navigate('/auth');
       return;
     }
 
@@ -65,10 +70,11 @@ const Curso = () => {
     const pendingCourseId = localStorage.getItem('pendingCourseId');
     if (pendingCourseId && user) {
       localStorage.removeItem('pendingCourseId');
+      localStorage.removeItem('pendingSlideNumber');
       // Inscrever usuário no curso se ainda não estiver inscrito
       enrollUserInCourse(pendingCourseId, user.id);
     }
-  }, [isAuthenticated, navigate, user]);
+  }, [isAuthenticated, navigate, user, courseId, slide]);
 
   // Verificar acesso ao exame ao tentar acessar slide de exame
   useEffect(() => {

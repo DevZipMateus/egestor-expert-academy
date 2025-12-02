@@ -35,10 +35,12 @@ export default function AuthCallback() {
           console.log('[AuthCallback] User authenticated:', session.user.email);
           // Verificar se há curso pendente
           const pendingCourseId = localStorage.getItem('pendingCourseId');
+          const pendingSlideNumber = localStorage.getItem('pendingSlideNumber') || '1';
           if (pendingCourseId) {
-            console.log('[AuthCallback] Pending course found:', pendingCourseId);
+            console.log('[AuthCallback] Pending course found:', pendingCourseId, 'slide:', pendingSlideNumber);
             localStorage.removeItem('pendingCourseId');
-            navigate(`/curso/${pendingCourseId}/1`, { replace: true });
+            localStorage.removeItem('pendingSlideNumber');
+            navigate(`/curso/${pendingCourseId}/${pendingSlideNumber}`, { replace: true });
           } else {
             // Successfully authenticated, redirect to dashboard
             navigate('/dashboard', { replace: true });
