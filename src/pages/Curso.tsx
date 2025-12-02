@@ -7,6 +7,7 @@ import VideoSlide from "@/components/VideoSlide";
 import ExerciseSlide from "@/components/ExerciseSlide";
 import AttentionSlide from "@/components/AttentionSlide";
 import ExamSlide from "@/components/ExamSlide";
+import IntroEgestorSlide from "@/components/IntroEgestorSlide";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -315,6 +316,11 @@ const Curso = () => {
     }
 
     if (!currentContent) return null;
+
+    // Slide especial de introdução "O que é o eGestor?"
+    if (currentSlide === -1) {
+      return <IntroEgestorSlide />;
+    }
 
     if (currentContent.type === 'exercise') {
       const questionData = getQuestionBySlideId(currentSlide);
