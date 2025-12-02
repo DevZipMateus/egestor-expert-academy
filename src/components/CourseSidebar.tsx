@@ -56,7 +56,7 @@ const CourseSidebar = () => {
 
   if (loading) {
     return (
-      <Sidebar className="w-64 md:w-80 bg-white border-r border-gray-200">
+      <Sidebar collapsible="offcanvas" className="bg-white border-r border-gray-200">
         <SidebarContent>
           <div className="p-3 md:p-4 border-b border-gray-200">
             <h2 className="text-base md:text-lg font-bold text-[#52555b] font-roboto">
@@ -104,7 +104,7 @@ const CourseSidebar = () => {
   const progressPercentage = Math.round((completedSlides / totalContentSlides) * 100);
 
   return (
-    <Sidebar className="w-64 md:w-80 bg-white border-r border-gray-200">
+    <Sidebar collapsible="offcanvas" className="bg-white border-r border-gray-200">
       <SidebarContent>
         <div className="p-3 md:p-4 border-b border-gray-200">
           <h2 className="text-base md:text-lg font-bold text-[#52555b] font-roboto">
