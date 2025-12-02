@@ -322,15 +322,26 @@ export const useCourseData = () => {
     };
   };
 
-  const getQuestionBySlideId = (slideId: number) => {
-    console.log('🔍 Buscando pergunta para slide ID:', slideId);
-    const question = questions.find(q => q.slide_id === slideId);
+  const getQuestionBySlideId = (slideOrder: number) => {
+    console.log('🔍 Buscando pergunta para slide ordem:', slideOrder);
+    
+    // Primeiro encontrar o slide pelo ordem para obter o ID real do banco
+    const slide = slides.find(s => s.ordem === slideOrder);
+    if (!slide) {
+      console.log('❌ Slide não encontrado para ordem:', slideOrder);
+      return null;
+    }
+    
+    console.log('🔍 Slide encontrado - ID real:', slide.id, 'Ordem:', slideOrder);
+    
+    // Agora buscar a pergunta pelo ID real do slide
+    const question = questions.find(q => q.slide_id === slide.id);
     if (!question) {
-      console.log('❌ Nenhuma pergunta encontrada para slide:', slideId);
+      console.log('❌ Nenhuma pergunta encontrada para slide ID:', slide.id);
       return null;
     }
 
-    console.log('✅ Pergunta encontrada para slide', slideId, ':', question.pergunta);
+    console.log('✅ Pergunta encontrada para slide', slideOrder, ':', question.pergunta);
     return {
       question: question.pergunta,
       options: question.options.map(opt => ({
