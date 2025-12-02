@@ -484,28 +484,47 @@ const Curso = () => {
                 <span className="text-sm md:text-base">ANTERIOR</span>
               </Button>
 
-              <div className="flex space-x-1 md:space-x-2 order-1 sm:order-2 overflow-x-auto pb-2 sm:pb-0">
-                {(() => {
-                  // Filtrar apenas slides de conteúdo (ordem >= 1)
-                  const contentSlides = slides.filter(s => s.ordem >= 1).sort((a, b) => a.ordem - b.ordem);
-                  const totalContent = contentSlides.length;
-                  const currentContentIndex = contentSlides.findIndex(s => s.ordem === currentSlide);
-                  const currentPage = currentContentIndex >= 0 ? Math.floor(currentContentIndex / 10) : 0;
-                  
-                  return Array.from({ length: Math.min(totalContent, 10) }, (_, index) => {
-                    const slideIndex = currentPage * 10 + index;
-                    if (slideIndex >= totalContent) return null;
-                    const isActive = slideIndex === currentContentIndex;
-                    return (
-                      <div
-                        key={slideIndex}
-                        className={`w-2 h-2 md:w-3 md:h-3 rounded-full flex-shrink-0 ${
-                          isActive ? 'bg-[#d61c00]' : 'bg-gray-300'
-                        }`}
-                      />
-                    );
-                  });
-                })()}
+              <div className="flex items-center gap-2 md:gap-4 order-1 sm:order-2">
+                <span className="text-sm md:text-base text-[#52555b] font-opensans whitespace-nowrap">
+                  {currentSlide >= 1 ? `${currentSlide} de ${totalSlides}` : 'Introdução'}
+                </span>
+                <div className="flex space-x-1 md:space-x-2 overflow-x-auto pb-2 sm:pb-0">
+                  {(() => {
+                    // Filtrar apenas slides de conteúdo (ordem >= 1)
+                    const contentSlides = slides.filter(s => s.ordem >= 1).sort((a, b) => a.ordem - b.ordem);
+                    const totalContent = contentSlides.length;
+                    const currentContentIndex = contentSlides.findIndex(s => s.ordem === currentSlide);
+                    const currentPage = currentContentIndex >= 0 ? Math.floor(currentContentIndex / 10) : 0;
+                    
+                    return Array.from({ length: Math.min(totalContent, 10) }, (_, index) => {
+                      const slideIndex = currentPage * 10 + index;
+                      if (slideIndex >= totalContent) return null;
+                      const targetSlide = contentSlides[slideIndex];
+                      const isActive = slideIndex === currentContentIndex;
+                      const canNavigate = slideIndex <= currentContentIndex || answeredSlides.has(targetSlide.ordem);
+                      
+                      return (
+                        <button
+                          key={slideIndex}
+                          onClick={() => {
+                            if (canNavigate) {
+                              navigate(`/curso/${courseId}/${targetSlide.ordem}`);
+                            }
+                          }}
+                          disabled={!canNavigate}
+                          className={`w-2 h-2 md:w-3 md:h-3 rounded-full flex-shrink-0 transition-all ${
+                            isActive 
+                              ? 'bg-[#d61c00]' 
+                              : canNavigate 
+                                ? 'bg-gray-400 hover:bg-gray-500 cursor-pointer' 
+                                : 'bg-gray-300 cursor-not-allowed'
+                          }`}
+                          title={canNavigate ? `Ir para slide ${targetSlide.ordem}` : 'Complete os slides anteriores'}
+                        />
+                      );
+                    });
+                  })()}
+                </div>
               </div>
 
               <Button
