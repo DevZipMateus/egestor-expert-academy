@@ -29,6 +29,7 @@ const Curso = () => {
   const prevSlideRef = useRef<number>(currentSlide);
   
   const { 
+    slides,
     loading, 
     error, 
     useStaticData, 
@@ -67,9 +68,9 @@ const Curso = () => {
     }
   }, [isAuthenticated, navigate, user]);
 
-  // Verificar acesso ao exame ao tentar acessar o slide 44
+  // Verificar acesso ao exame ao tentar acessar slide de exame
   useEffect(() => {
-    if (currentSlide === 44 && currentContent?.type === 'exam' && !isExamAccessible()) {
+    if (currentContent?.type === 'exam' && !isExamAccessible()) {
       console.log('🚫 Acesso ao exame bloqueado - nem todos os slides foram completados');
       toast.error('Complete todos os slides anteriores para acessar o exame final.');
       
@@ -156,8 +157,13 @@ const Curso = () => {
   }, [currentContent?.examId, currentContent?.type, getExamTimeLimit]);
 
   const goToPrevious = () => {
-    if (currentSlide > 0) {
-      navigate(`/curso/${courseId}/${currentSlide - 1}`);
+    // Encontrar slide anterior na lista ordenada
+    const sortedSlides = [...slides].sort((a, b) => a.ordem - b.ordem);
+    const currentIndex = sortedSlides.findIndex(s => s.ordem === currentSlide);
+    
+    if (currentIndex > 0) {
+      const prevSlide = sortedSlides[currentIndex - 1];
+      navigate(`/curso/${courseId}/${prevSlide.ordem}`);
     } else {
       navigate('/dashboard');
     }
@@ -176,14 +182,20 @@ const Curso = () => {
       return;
     }
 
-    // Verificar se o próximo slide é o exame (44) e se está bloqueado
-    if (currentSlide === 43 && !isExamAccessible()) {
-      toast.error("Complete todos os slides anteriores para acessar o exame final.");
-      return;
-    }
-
-    if (currentSlide < totalSlides) {
-      navigate(`/curso/${courseId}/${currentSlide + 1}`);
+    // Encontrar próximo slide na lista ordenada
+    const sortedSlides = [...slides].sort((a, b) => a.ordem - b.ordem);
+    const currentIndex = sortedSlides.findIndex(s => s.ordem === currentSlide);
+    
+    if (currentIndex < sortedSlides.length - 1) {
+      const nextSlide = sortedSlides[currentIndex + 1];
+      
+      // Verificar se o próximo slide é o exame e se está bloqueado
+      if (nextSlide.tipo === 'exam' && !isExamAccessible()) {
+        toast.error("Complete todos os slides anteriores para acessar o exame final.");
+        return;
+      }
+      
+      navigate(`/curso/${courseId}/${nextSlide.ordem}`);
     } else {
       if (examPassed) {
         navigate('/expert');
@@ -393,7 +405,8 @@ const Curso = () => {
   };
 
   if (!currentContent && !loading) {
-    navigate(`/curso/${courseId}/0`);
+    // Redirecionar para o primeiro slide de introdução
+    navigate(`/curso/${courseId}/-2`);
     return null;
   }
 

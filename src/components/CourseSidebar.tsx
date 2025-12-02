@@ -143,7 +143,7 @@ const CourseSidebar = () => {
               <SidebarGroupContent>
                 <SidebarMenu>
                   {group.slides.map((slideData) => {
-                    const isIntroSlide = slideData.ordem === 0;
+                    const isIntroSlide = slideData.ordem < 0;
                     const isExamSlide = slideData.tipo === 'exam';
                     const isLocked = isExamSlide && !isExamUnlocked();
                     const Icon = isLocked ? Lock : getSlideIcon(slideData.tipo, isIntroSlide);
