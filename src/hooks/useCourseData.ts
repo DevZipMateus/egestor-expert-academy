@@ -23,6 +23,10 @@ interface SlideData {
   module_id: string | null;
   course_id: string | null;
   exam_id: string | null;
+  modules?: {
+    titulo: string;
+    ordem: number;
+  } | null;
 }
 
 interface QuestionData {
@@ -77,7 +81,13 @@ export const useCourseData = () => {
       
       const { data: slidesData, error: slidesError } = await supabase
         .from('slides')
-        .select('*')
+        .select(`
+          *,
+          modules (
+            titulo,
+            ordem
+          )
+        `)
         .eq('course_id', '550e8400-e29b-41d4-a716-446655440000')
         .eq('ativo', true)
         .order('ordem');
@@ -218,8 +228,8 @@ export const useCourseData = () => {
         aulasAssistidas.push(slideNumber);
         console.log('➕ Adicionando slide', slideNumber, 'à lista de assistidas');
         
-        // Calcular progresso percentual (46 slides de conteúdo, exclui o exame)
-        const progressoPercentual = Math.round((aulasAssistidas.length / 46) * 100);
+        // Calcular progresso percentual (43 slides de conteúdo, exclui introdução e exame)
+        const progressoPercentual = Math.round((aulasAssistidas.length / 43) * 100);
         console.log('📊 Progresso percentual calculado:', progressoPercentual, '%');
         
         // Atualizar no banco com progresso percentual

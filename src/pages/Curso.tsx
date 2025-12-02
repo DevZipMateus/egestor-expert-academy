@@ -45,10 +45,10 @@ const Curso = () => {
   const totalSlides = getTotalSlidesCount();
   const currentContent = getSlideByOrder(currentSlide);
 
-  // Verificar se o exame está acessível (todas as 46 aulas anteriores completadas)
+  // Verificar se o exame está acessível (todas as 43 aulas de conteúdo completadas)
   const isExamAccessible = () => {
-    // Slides 1-46 são conteúdo, 47 é o exame
-    const contentSlides = Array.from({ length: 46 }, (_, i) => i + 1);
+    // Slides 1-43 são conteúdo, 44 é o exame, 0 é introdução
+    const contentSlides = Array.from({ length: 43 }, (_, i) => i + 1);
     return contentSlides.every(slideNum => answeredSlides.has(slideNum));
   };
 
@@ -67,14 +67,14 @@ const Curso = () => {
     }
   }, [isAuthenticated, navigate, user]);
 
-  // Verificar acesso ao exame ao tentar acessar o slide 47
+  // Verificar acesso ao exame ao tentar acessar o slide 44
   useEffect(() => {
-    if (currentSlide === 47 && currentContent?.type === 'exam' && !isExamAccessible()) {
+    if (currentSlide === 44 && currentContent?.type === 'exam' && !isExamAccessible()) {
       console.log('🚫 Acesso ao exame bloqueado - nem todos os slides foram completados');
       toast.error('Complete todos os slides anteriores para acessar o exame final.');
       
       // Encontrar o próximo slide não completado
-      const nextIncompleteSlide = Array.from({ length: 46 }, (_, i) => i + 1)
+      const nextIncompleteSlide = Array.from({ length: 43 }, (_, i) => i + 1)
         .find(slideNum => !answeredSlides.has(slideNum)) || 1;
       
       navigate(`/curso/${courseId}/${nextIncompleteSlide}`);
@@ -156,7 +156,7 @@ const Curso = () => {
   }, [currentContent?.examId, currentContent?.type, getExamTimeLimit]);
 
   const goToPrevious = () => {
-    if (currentSlide > 1) {
+    if (currentSlide > 0) {
       navigate(`/curso/${courseId}/${currentSlide - 1}`);
     } else {
       navigate('/dashboard');
@@ -176,8 +176,8 @@ const Curso = () => {
       return;
     }
 
-    // Verificar se o próximo slide é o exame (47) e se está bloqueado
-    if (currentSlide === 46 && !isExamAccessible()) {
+    // Verificar se o próximo slide é o exame (44) e se está bloqueado
+    if (currentSlide === 43 && !isExamAccessible()) {
       toast.error("Complete todos os slides anteriores para acessar o exame final.");
       return;
     }
@@ -393,7 +393,7 @@ const Curso = () => {
   };
 
   if (!currentContent && !loading) {
-    navigate(`/curso/${courseId}/1`);
+    navigate(`/curso/${courseId}/0`);
     return null;
   }
 
