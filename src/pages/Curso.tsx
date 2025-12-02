@@ -320,6 +320,14 @@ const Curso = () => {
     }
 
     switch (currentContent.type) {
+      case 'video':
+        return (
+          <VideoSlide 
+            title={currentContent.title}
+            videoUrl={currentContent.videoUrl || ''}
+          />
+        );
+      
       case 'content':
         if (currentContent.videoUrl) {
           return (
