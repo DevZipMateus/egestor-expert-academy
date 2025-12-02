@@ -437,14 +437,16 @@ const Curso = () => {
                   <h1 className="text-lg md:text-2xl font-bold font-roboto text-white truncate">
                     Expert eGestor
                   </h1>
-                  <p className="text-xs md:text-sm font-opensans mt-1 text-white/90">
-                    Slide {currentSlide} de {totalSlides}
-                    {useStaticData && (
-                      <span className="ml-2 text-xs bg-yellow-500 text-black px-2 py-1 rounded">
-                        Offline
-                      </span>
-                    )}
-                  </p>
+                  {currentSlide >= 1 && (
+                    <p className="text-xs md:text-sm font-opensans mt-1 text-white/90">
+                      Slide {currentSlide} de {totalSlides}
+                      {useStaticData && (
+                        <span className="ml-2 text-xs bg-yellow-500 text-black px-2 py-1 rounded">
+                          Offline
+                        </span>
+                      )}
+                    </p>
+                  )}
                 </div>
               </div>
               <SettingsDropdown user={user as any} />
