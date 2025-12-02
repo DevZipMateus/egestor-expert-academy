@@ -109,33 +109,34 @@ const Curso = () => {
 
   // Reset navigation control when slide changes - usando dados persistidos
   useEffect(() => {
-    const slideChanged = prevSlideRef.current !== currentSlide;
+    // Log para debug
+    console.log('🔄 Verificando navegação para slide:', currentSlide, 'Tipo:', currentContent?.type);
     
-    if (slideChanged) {
-      console.log('🔄 Slide mudou de', prevSlideRef.current, 'para:', currentSlide, 'Tipo:', currentContent?.type);
-      prevSlideRef.current = currentSlide;
-      
-      const slideWasAnswered = answeredSlides.has(currentSlide);
-      console.log('🔍 Verificando se slide', currentSlide, 'foi respondido:', slideWasAnswered);
-      
-      if (currentContent?.type === 'exercise') {
-        if (slideWasAnswered) {
-          console.log('✅ Exercício já foi respondido anteriormente - liberando navegação');
-          setCanAdvance(true);
-          setExerciseAnswered(true);
-        } else {
-          console.log('🚫 Exercício detectado - bloqueando navegação');
-          setCanAdvance(false);
-          setExerciseAnswered(false);
-        }
-      } else if (currentContent?.type === 'exam') {
-        setCanAdvance(false);
-        console.log('🚫 Exame detectado - bloqueando navegação');
-      } else {
+    // Atualizar referência do slide anterior
+    prevSlideRef.current = currentSlide;
+    
+    // Verificar se o slide já foi respondido
+    const slideWasAnswered = answeredSlides.has(currentSlide);
+    console.log('🔍 Verificando se slide', currentSlide, 'foi respondido:', slideWasAnswered);
+    
+    if (currentContent?.type === 'exercise') {
+      if (slideWasAnswered) {
+        console.log('✅ Exercício já foi respondido anteriormente - liberando navegação');
         setCanAdvance(true);
+        setExerciseAnswered(true);
+      } else {
+        console.log('🚫 Exercício detectado - bloqueando navegação');
+        setCanAdvance(false);
         setExerciseAnswered(false);
-        console.log('✅ Slide normal - liberando navegação');
       }
+    } else if (currentContent?.type === 'exam') {
+      setCanAdvance(false);
+      console.log('🚫 Exame detectado - bloqueando navegação');
+    } else {
+      // Para video, content, attention - sempre permite avançar
+      setCanAdvance(true);
+      setExerciseAnswered(false);
+      console.log('✅ Slide normal - liberando navegação');
     }
   }, [currentSlide, currentContent?.type, answeredSlides]);
 
@@ -470,9 +471,10 @@ const Curso = () => {
                   'opacity-50 cursor-not-allowed bg-gray-400' : 'bg-[#d61c00] hover:bg-[#b01800]'
                 }`}
                 disabled={
+                  loading ||
                   (currentContent?.type === 'exercise' && !exerciseAnswered) ||
                   (currentContent?.type === 'exam' && !canAdvance) ||
-                  (currentSlide === totalSlides && !examPassed)
+                  (currentSlide === totalSlides && currentContent?.type === 'exam' && !examPassed)
                 }
               >
                 <span className="text-sm md:text-base">
