@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Settings, Maximize, Minimize, User, LogOut } from 'lucide-react';
+import { Settings, Maximize, Minimize, User, LogOut, Shield } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,6 +13,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { User as SupabaseUser } from "@supabase/supabase-js";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface SettingsDropdownProps {
   user: SupabaseUser | null;
@@ -21,6 +22,7 @@ interface SettingsDropdownProps {
 const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ user }) => {
   const navigate = useNavigate();
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const { isAdmin } = useUserRole(user?.email || null);
 
   const handleFullscreenToggle = () => {
     if (!document.fullscreenElement) {
@@ -59,6 +61,12 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ user }) => {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {isAdmin && (
+          <DropdownMenuItem onClick={() => navigate('/admin')}>
+            <Shield className="w-4 h-4 mr-2" />
+            Painel Admin
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem onClick={handleFullscreenToggle}>
           {isFullscreen ? (
             <>
