@@ -27,6 +27,7 @@ const Curso = () => {
   const [canAdvance, setCanAdvance] = useState<boolean>(true);
   const [exerciseAnswered, setExerciseAnswered] = useState<boolean>(false);
   const [examTimeLimit, setExamTimeLimit] = useState<number | null>(null);
+  const [maxVisitedSlide, setMaxVisitedSlide] = useState<number>(1);
   const currentSlide = parseInt(slide || '1');
   const prevSlideRef = useRef<number>(currentSlide);
   
@@ -47,6 +48,16 @@ const Curso = () => {
 
   const totalSlides = getTotalSlidesCount();
   const currentContent = getSlideByOrder(currentSlide);
+
+  // Inicializar e atualizar maxVisitedSlide
+  useEffect(() => {
+    // Calcular máximo já visitado com base no progresso salvo
+    const maxFromProgress = answeredSlides.size > 0 ? Math.max(...Array.from(answeredSlides)) : 0;
+    const newMax = Math.max(maxFromProgress, currentSlide, maxVisitedSlide);
+    if (newMax > maxVisitedSlide) {
+      setMaxVisitedSlide(newMax);
+    }
+  }, [currentSlide, answeredSlides]);
 
   // Verificar se o exame está acessível (todas as 43 aulas de conteúdo completadas)
   const isExamAccessible = () => {
@@ -488,35 +499,32 @@ const Curso = () => {
                 <span className="text-sm md:text-base text-[#52555b] font-opensans whitespace-nowrap">
                   {currentSlide >= 1 ? `${currentSlide} de ${totalSlides}` : 'Introdução'}
                 </span>
-                <div className="flex space-x-1 md:space-x-2 overflow-x-auto pb-2 sm:pb-0">
+                <div className="flex space-x-1 overflow-x-auto max-w-[200px] md:max-w-[350px] pb-2 sm:pb-0 scrollbar-thin">
                   {(() => {
-                    // Filtrar apenas slides de conteúdo (ordem >= 1)
-                    const contentSlides = slides.filter(s => s.ordem >= 1).sort((a, b) => a.ordem - b.ordem);
-                    const totalContent = contentSlides.length;
-                    const currentContentIndex = contentSlides.findIndex(s => s.ordem === currentSlide);
-                    const currentPage = currentContentIndex >= 0 ? Math.floor(currentContentIndex / 10) : 0;
+                    // Filtrar apenas slides de conteúdo (ordem >= 1, excluindo exame que é o último)
+                    const contentSlides = slides
+                      .filter(s => s.ordem >= 1 && s.tipo !== 'exam')
+                      .sort((a, b) => a.ordem - b.ordem);
                     
-                    return Array.from({ length: Math.min(totalContent, 10) }, (_, index) => {
-                      const slideIndex = currentPage * 10 + index;
-                      if (slideIndex >= totalContent) return null;
-                      const targetSlide = contentSlides[slideIndex];
-                      const isActive = slideIndex === currentContentIndex;
-                      const canNavigate = slideIndex <= currentContentIndex || answeredSlides.has(targetSlide.ordem);
+                    return contentSlides.map((targetSlide, index) => {
+                      const isActive = targetSlide.ordem === currentSlide;
+                      // Permitir navegação se o slide é <= maxVisitedSlide
+                      const canNavigate = targetSlide.ordem <= maxVisitedSlide;
                       
                       return (
                         <button
-                          key={slideIndex}
+                          key={targetSlide.ordem}
                           onClick={() => {
                             if (canNavigate) {
                               navigate(`/curso/${courseId}/${targetSlide.ordem}`);
                             }
                           }}
                           disabled={!canNavigate}
-                          className={`w-2 h-2 md:w-3 md:h-3 rounded-full flex-shrink-0 transition-all ${
+                          className={`w-2 h-2 md:w-2.5 md:h-2.5 rounded-full flex-shrink-0 transition-all ${
                             isActive 
-                              ? 'bg-[#d61c00]' 
+                              ? 'bg-[#d61c00] scale-125' 
                               : canNavigate 
-                                ? 'bg-gray-400 hover:bg-gray-500 cursor-pointer' 
+                                ? 'bg-gray-500 hover:bg-gray-600 cursor-pointer' 
                                 : 'bg-gray-300 cursor-not-allowed'
                           }`}
                           title={canNavigate ? `Ir para slide ${targetSlide.ordem}` : 'Complete os slides anteriores'}
