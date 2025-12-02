@@ -43,7 +43,8 @@ const Curso = () => {
     getExamQuestions,
     getExamTimeLimit,
     saveExamAttempt,
-    markSlideAsAnswered
+    markSlideAsAnswered,
+    getExerciseAnswer
   } = useCourseData();
 
   const totalSlides = getTotalSlidesCount();
@@ -224,11 +225,11 @@ const Curso = () => {
     }
   };
 
-  const handleExerciseAnswer = async (correct: boolean) => {
-    console.log('📝 Resposta do exercício recebida:', correct);
+  const handleExerciseAnswer = async (correct: boolean, selectedOption: number) => {
+    console.log('📝 Resposta do exercício recebida:', correct, 'Opção:', selectedOption);
     
-    // Salvar no banco de dados usando o sistema unificado
-    await markSlideAsAnswered(currentSlide);
+    // Salvar no banco de dados usando o sistema unificado (com resposta)
+    await markSlideAsAnswered(currentSlide, { selectedOption, correct });
     
     setExerciseAnswered(true);
     setCanAdvance(true);
@@ -343,6 +344,7 @@ const Curso = () => {
 
     if (currentContent.type === 'exercise') {
       const questionData = getQuestionBySlideId(currentSlide);
+      const savedAnswer = getExerciseAnswer(currentSlide);
       if (questionData) {
         return (
           <ExerciseSlide
@@ -350,6 +352,7 @@ const Curso = () => {
             question={questionData.question}
             options={questionData.options}
             explanation={questionData.explanation}
+            savedAnswer={savedAnswer}
             onAnswer={handleExerciseAnswer}
           />
         );
