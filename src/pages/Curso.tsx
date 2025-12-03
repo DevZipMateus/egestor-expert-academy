@@ -379,15 +379,42 @@ const Curso = () => {
             />
           );
         } else {
+          // Função de sanitização para HTML seguro
+          const sanitizeHtml = (html: string) => {
+            const allowedTags = ['strong', 'b', 'em', 'i', 'u', 'span', 'a', 'br'];
+            let sanitized = html;
+            const tagRegex = /<\/?([a-zA-Z0-9]+)([^>]*)>/g;
+            sanitized = sanitized.replace(tagRegex, (match, tagName, attrs) => {
+              const lowerTag = tagName.toLowerCase();
+              if (!allowedTags.includes(lowerTag)) return '';
+              if (lowerTag === 'a') {
+                const hrefMatch = attrs.match(/href="([^"]*)"/);
+                const href = hrefMatch ? hrefMatch[1] : '#';
+                return match.startsWith('</') ? '</a>' : `<a href="${href}" target="_blank" rel="noopener noreferrer" style="color: #d61c00; text-decoration: underline;">`;
+              }
+              if (lowerTag === 'span') {
+                const styleMatch = attrs.match(/style="([^"]*)"/);
+                const colorMatch = styleMatch ? styleMatch[1].match(/color:\s*([^;]+)/) : null;
+                if (colorMatch) {
+                  return `<span style="color: ${colorMatch[1]};">`;
+                }
+                return '<span>';
+              }
+              return match;
+            });
+            return sanitized;
+          };
+
           return (
             <div className="space-y-4 md:space-y-6">
               <h2 className="text-2xl md:text-3xl font-bold text-[#52555b] font-roboto text-center px-4">
                 {currentContent.title}
               </h2>
               <div className="bg-white rounded-lg p-4 md:p-8 shadow-sm border text-center">
-                <p className="text-base md:text-lg text-[#52555b] font-opensans leading-relaxed">
-                  {currentContent.content}
-                </p>
+                <div 
+                  className="text-base md:text-lg text-[#52555b] font-opensans leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(currentContent.content || '') }}
+                />
               </div>
             </div>
           );
