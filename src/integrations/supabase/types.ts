@@ -14,6 +14,107 @@ export type Database = {
   }
   public: {
     Tables: {
+      certificate_configs: {
+        Row: {
+          background_image_url: string | null
+          cert_number_color: string | null
+          cert_number_font_size: number | null
+          conclusion_color: string | null
+          conclusion_font_size: number | null
+          conclusion_text: string | null
+          conclusion_y_position: number | null
+          course_id: string
+          created_at: string | null
+          date_color: string | null
+          date_font_size: number | null
+          date_y_position: number | null
+          email_color: string | null
+          email_font_size: number | null
+          email_y_position: number | null
+          id: string
+          name_bold: boolean | null
+          name_color: string | null
+          name_font_size: number | null
+          name_y_position: number | null
+          score_color: string | null
+          score_font_size: number | null
+          score_prefix: string | null
+          score_y_position: number | null
+          show_cert_number: boolean | null
+          show_email: boolean | null
+          show_score: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          background_image_url?: string | null
+          cert_number_color?: string | null
+          cert_number_font_size?: number | null
+          conclusion_color?: string | null
+          conclusion_font_size?: number | null
+          conclusion_text?: string | null
+          conclusion_y_position?: number | null
+          course_id: string
+          created_at?: string | null
+          date_color?: string | null
+          date_font_size?: number | null
+          date_y_position?: number | null
+          email_color?: string | null
+          email_font_size?: number | null
+          email_y_position?: number | null
+          id?: string
+          name_bold?: boolean | null
+          name_color?: string | null
+          name_font_size?: number | null
+          name_y_position?: number | null
+          score_color?: string | null
+          score_font_size?: number | null
+          score_prefix?: string | null
+          score_y_position?: number | null
+          show_cert_number?: boolean | null
+          show_email?: boolean | null
+          show_score?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          background_image_url?: string | null
+          cert_number_color?: string | null
+          cert_number_font_size?: number | null
+          conclusion_color?: string | null
+          conclusion_font_size?: number | null
+          conclusion_text?: string | null
+          conclusion_y_position?: number | null
+          course_id?: string
+          created_at?: string | null
+          date_color?: string | null
+          date_font_size?: number | null
+          date_y_position?: number | null
+          email_color?: string | null
+          email_font_size?: number | null
+          email_y_position?: number | null
+          id?: string
+          name_bold?: boolean | null
+          name_color?: string | null
+          name_font_size?: number | null
+          name_y_position?: number | null
+          score_color?: string | null
+          score_font_size?: number | null
+          score_prefix?: string | null
+          score_y_position?: number | null
+          show_cert_number?: boolean | null
+          show_email?: boolean | null
+          show_score?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_configs_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: true
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       certificates: {
         Row: {
           certificate_number: string
