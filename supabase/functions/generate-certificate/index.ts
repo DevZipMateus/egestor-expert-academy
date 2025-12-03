@@ -128,7 +128,7 @@ serve(async (req) => {
     const nomeWidth = boldFont.widthOfTextAtSize(nomeAluno, 28);
     page.drawText(nomeAluno, {
       x: centerX - (nomeWidth / 2),
-      y: 330,
+      y: 340,
       size: 28,
       font: boldFont,
       color: rgb(0.2, 0.2, 0.2),
@@ -139,7 +139,7 @@ serve(async (req) => {
     const emailWidth = regularFont.widthOfTextAtSize(emailAluno, 12);
     page.drawText(emailAluno, {
       x: centerX - (emailWidth / 2),
-      y: 305,
+      y: 312,
       size: 12,
       font: regularFont,
       color: rgb(0.5, 0.5, 0.5),
@@ -149,7 +149,7 @@ serve(async (req) => {
     const fraseWidth = regularFont.widthOfTextAtSize(fraseConclusao, 16);
     page.drawText(fraseConclusao, {
       x: centerX - (fraseWidth / 2),
-      y: 280,
+      y: 265,
       size: 16,
       font: regularFont,
       color: rgb(0.3, 0.3, 0.3),
@@ -159,7 +159,7 @@ serve(async (req) => {
     const dataWidth = regularFont.widthOfTextAtSize(dataFormatada, 14);
     page.drawText(dataFormatada, {
       x: centerX - (dataWidth / 2),
-      y: 250,
+      y: 225,
       size: 14,
       font: regularFont,
       color: rgb(0.4, 0.4, 0.4),
@@ -170,7 +170,7 @@ serve(async (req) => {
     const notaWidth = boldFont.widthOfTextAtSize(notaTexto, 18);
     page.drawText(notaTexto, {
       x: centerX - (notaWidth / 2),
-      y: 220,
+      y: 180,
       size: 18,
       font: boldFont,
       color: rgb(0.2, 0.2, 0.2),
