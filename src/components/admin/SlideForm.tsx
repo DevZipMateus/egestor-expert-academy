@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Plus, Trash2, AlertCircle, Upload, Bold, Link as LinkIcon } from 'lucide-react';
+import { Plus, Trash2, AlertCircle, Upload, Bold, Italic, Underline, Link as LinkIcon } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface SlideFormProps {
@@ -554,6 +554,69 @@ const SlideForm = ({ moduleId, courseId, slideId, onSave, onCancel }: SlideFormP
                       variant="outline"
                       size="sm"
                       onClick={() => {
+                        const selection = window.getSelection()?.toString();
+                        if (selection) {
+                          const formatted = `<strong>${selection}</strong>`;
+                          setFormData({ 
+                            ...formData, 
+                            conteudo: formData.conteudo.replace(selection, formatted) 
+                          });
+                        } else {
+                          toast.info('Selecione um texto para aplicar negrito');
+                        }
+                      }}
+                      className="gap-1"
+                    >
+                      <Bold className="h-4 w-4" />
+                      Negrito
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const selection = window.getSelection()?.toString();
+                        if (selection) {
+                          const formatted = `<em>${selection}</em>`;
+                          setFormData({ 
+                            ...formData, 
+                            conteudo: formData.conteudo.replace(selection, formatted) 
+                          });
+                        } else {
+                          toast.info('Selecione um texto para aplicar itálico');
+                        }
+                      }}
+                      className="gap-1"
+                    >
+                      <Italic className="h-4 w-4" />
+                      Itálico
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const selection = window.getSelection()?.toString();
+                        if (selection) {
+                          const formatted = `<u>${selection}</u>`;
+                          setFormData({ 
+                            ...formData, 
+                            conteudo: formData.conteudo.replace(selection, formatted) 
+                          });
+                        } else {
+                          toast.info('Selecione um texto para aplicar sublinhado');
+                        }
+                      }}
+                      className="gap-1"
+                    >
+                      <Underline className="h-4 w-4" />
+                      Sublinhado
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
                         const url = prompt('Digite a URL do link:');
                         const text = prompt('Digite o texto do link:');
                         if (url && text) {
@@ -566,7 +629,8 @@ const SlideForm = ({ moduleId, courseId, slideId, onSave, onCancel }: SlideFormP
                       }}
                       className="gap-1"
                     >
-                      🔗 Inserir Link
+                      <LinkIcon className="h-4 w-4" />
+                      Link
                     </Button>
                   </div>
                   <Textarea
@@ -665,6 +729,52 @@ const SlideForm = ({ moduleId, courseId, slideId, onSave, onCancel }: SlideFormP
                 >
                   <span className="w-3 h-3 rounded-full bg-blue-500"></span>
                   Azul
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    const textarea = document.getElementById('conteudo-content') as HTMLTextAreaElement;
+                    if (textarea) {
+                      const start = textarea.selectionStart;
+                      const end = textarea.selectionEnd;
+                      const selectedText = formData.conteudo.substring(start, end);
+                      if (selectedText) {
+                        const newText = formData.conteudo.substring(0, start) + 
+                          `<em>${selectedText}</em>` + 
+                          formData.conteudo.substring(end);
+                        setFormData({ ...formData, conteudo: newText });
+                      }
+                    }
+                  }}
+                  className="gap-1"
+                >
+                  <Italic className="h-4 w-4" />
+                  Itálico
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    const textarea = document.getElementById('conteudo-content') as HTMLTextAreaElement;
+                    if (textarea) {
+                      const start = textarea.selectionStart;
+                      const end = textarea.selectionEnd;
+                      const selectedText = formData.conteudo.substring(start, end);
+                      if (selectedText) {
+                        const newText = formData.conteudo.substring(0, start) + 
+                          `<u>${selectedText}</u>` + 
+                          formData.conteudo.substring(end);
+                        setFormData({ ...formData, conteudo: newText });
+                      }
+                    }
+                  }}
+                  className="gap-1"
+                >
+                  <Underline className="h-4 w-4" />
+                  Sublinhado
                 </Button>
                 <Button 
                   type="button" 
