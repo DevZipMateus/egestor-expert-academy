@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Upload, Save, Eye, Loader2, Image as ImageIcon, X } from 'lucide-react';
 
@@ -75,11 +76,23 @@ const CertificateConfigTab = ({ courseId }: CertificateConfigTabProps) => {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [courseName, setCourseName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchConfig();
+    fetchCourseName();
   }, [courseId]);
+
+  const fetchCourseName = async () => {
+    const { data } = await supabase
+      .from('courses')
+      .select('titulo')
+      .eq('id', courseId)
+      .maybeSingle();
+    if (data) setCourseName(data.titulo);
+  };
 
   const fetchConfig = async () => {
     try {
@@ -196,11 +209,119 @@ const CertificateConfigTab = ({ courseId }: CertificateConfigTabProps) => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Configuração do Certificado</h3>
-        <Button onClick={handleSave} disabled={saving}>
-          {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-          Salvar Configurações
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowPreview(true)}>
+            <Eye className="w-4 h-4 mr-2" />
+            Pré-visualizar
+          </Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+            Salvar Configurações
+          </Button>
+        </div>
       </div>
+
+      {/* Preview Dialog */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>Pré-visualização do Certificado</DialogTitle>
+          </DialogHeader>
+          <div 
+            className="relative w-full mx-auto border rounded-lg overflow-hidden"
+            style={{ 
+              aspectRatio: '841.89 / 595.28',
+              maxHeight: '60vh',
+              backgroundImage: config.background_image_url 
+                ? `url(${config.background_image_url})` 
+                : 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
+          >
+            {/* Nome do aluno */}
+            <div 
+              className="absolute left-1/2 transform -translate-x-1/2 text-center whitespace-nowrap"
+              style={{ 
+                bottom: `${(config.name_y_position / 595.28) * 100}%`,
+                fontSize: `${config.name_font_size * 0.5}px`,
+                fontWeight: config.name_bold ? 'bold' : 'normal',
+                color: config.name_color
+              }}
+            >
+              João da Silva
+            </div>
+
+            {/* Email */}
+            {config.show_email && (
+              <div 
+                className="absolute left-1/2 transform -translate-x-1/2 text-center whitespace-nowrap"
+                style={{ 
+                  bottom: `${(config.email_y_position / 595.28) * 100}%`,
+                  fontSize: `${config.email_font_size * 0.5}px`,
+                  color: config.email_color
+                }}
+              >
+                joao.silva@email.com
+              </div>
+            )}
+
+            {/* Frase de conclusão */}
+            <div 
+              className="absolute left-1/2 transform -translate-x-1/2 text-center whitespace-nowrap"
+              style={{ 
+                bottom: `${(config.conclusion_y_position / 595.28) * 100}%`,
+                fontSize: `${config.conclusion_font_size * 0.5}px`,
+                color: config.conclusion_color
+              }}
+            >
+              {config.conclusion_text} "{courseName || 'Nome do Curso'}"
+            </div>
+
+            {/* Data */}
+            <div 
+              className="absolute left-1/2 transform -translate-x-1/2 text-center whitespace-nowrap"
+              style={{ 
+                bottom: `${(config.date_y_position / 595.28) * 100}%`,
+                fontSize: `${config.date_font_size * 0.5}px`,
+                color: config.date_color
+              }}
+            >
+              {new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </div>
+
+            {/* Nota */}
+            {config.show_score && (
+              <div 
+                className="absolute left-1/2 transform -translate-x-1/2 text-center whitespace-nowrap font-bold"
+                style={{ 
+                  bottom: `${(config.score_y_position / 595.28) * 100}%`,
+                  fontSize: `${config.score_font_size * 0.5}px`,
+                  color: config.score_color
+                }}
+              >
+                {config.score_prefix} 85%
+              </div>
+            )}
+
+            {/* Número do certificado */}
+            {config.show_cert_number && (
+              <div 
+                className="absolute right-4 bottom-2 text-center whitespace-nowrap"
+                style={{ 
+                  fontSize: `${config.cert_number_font_size * 0.5}px`,
+                  color: config.cert_number_color
+                }}
+              >
+                Certificado: CERT-CURSO-2024-0001
+              </div>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground text-center mt-2">
+            * Esta é uma prévia aproximada. O PDF final pode ter pequenas diferenças de posicionamento.
+          </p>
+        </DialogContent>
+      </Dialog>
 
       {/* Variáveis disponíveis */}
       <Card>
