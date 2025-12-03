@@ -63,12 +63,14 @@ const Dashboard = () => {
         enrollments.map(async (enrollment) => {
           const course = enrollment.courses as any;
           
-          // Buscar total de slides do curso
+          // Buscar total de slides de conteúdo (excluindo intro e exame)
           const { count: totalSlides } = await supabase
             .from('slides')
             .select('*', { count: 'exact', head: true })
             .eq('course_id', enrollment.course_id)
-            .eq('ativo', true);
+            .eq('ativo', true)
+            .gte('ordem', 1)
+            .neq('tipo', 'exam');
 
           // Calcular último slide assistido
           const lastSlide = enrollment.aulas_assistidas && enrollment.aulas_assistidas.length > 0
