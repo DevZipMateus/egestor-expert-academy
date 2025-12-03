@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-export type UserRole = 'admin' | 'student' | null;
+export type UserRole = 'admin' | 'funcionario' | 'student' | null;
 
 export const useUserRole = (userEmail: string | null) => {
   const [role, setRole] = useState<UserRole>(null);
@@ -51,5 +51,5 @@ export const useUserRole = (userEmail: string | null) => {
     fetchUserRole();
   }, [userEmail]);
 
-  return { role, loading, isAdmin: role === 'admin', isStudent: role === 'student' };
+  return { role, loading, isAdmin: role === 'admin', isFuncionario: role === 'funcionario', isStudent: role === 'student' };
 };
