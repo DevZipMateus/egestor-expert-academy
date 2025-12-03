@@ -128,10 +128,21 @@ serve(async (req) => {
     const nomeWidth = boldFont.widthOfTextAtSize(nomeAluno, 28);
     page.drawText(nomeAluno, {
       x: centerX - (nomeWidth / 2),
-      y: 320,
+      y: 330,
       size: 28,
       font: boldFont,
       color: rgb(0.2, 0.2, 0.2),
+    });
+
+    // Email do aluno (menor, abaixo do nome)
+    const emailAluno = profile.email;
+    const emailWidth = regularFont.widthOfTextAtSize(emailAluno, 12);
+    page.drawText(emailAluno, {
+      x: centerX - (emailWidth / 2),
+      y: 305,
+      size: 12,
+      font: regularFont,
+      color: rgb(0.5, 0.5, 0.5),
     });
 
     // Frase de conclusão
