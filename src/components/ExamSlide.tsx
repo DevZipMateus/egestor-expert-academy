@@ -150,51 +150,113 @@ const ExamSlide: React.FC<ExamSlideProps> = ({ title, getExamQuestions, onExamCo
     );
   }
 
+  // Função para converter índice em letra (0 = A, 1 = B, 2 = C, 3 = D)
+  const indexToLetter = (index: number | null) => {
+    if (index === null) return '-';
+    return String.fromCharCode(65 + index); // 65 = 'A' em ASCII
+  };
+
+  const handleRetry = () => {
+    setAnswers(new Array(questions.length).fill(null));
+    setCurrentQuestion(0);
+    setSelectedOption(null);
+    setExamCompleted(false);
+    setScore(0);
+    setShowResults(false);
+    if (timeLimit && timeLimit > 0) {
+      setTimeRemaining(timeLimit * 60);
+    }
+  };
+
   if (examCompleted && !showResults) {
     const passed = score >= 80;
+    const correctCount = answers.filter((answer, index) => 
+      answer !== null && questions[index]?.options[answer]?.correct
+    ).length;
+
     return (
-      <div className="space-y-4 md:space-y-6 max-w-2xl mx-auto">
-        <h2 className="text-2xl md:text-3xl font-bold text-[#52555b] font-roboto text-center px-4">
-          Resultado do Exame
-        </h2>
+      <div className="space-y-6 max-w-2xl mx-auto px-4">
+        {/* Título e subtítulo */}
+        <div className="text-center">
+          <h2 className="text-2xl md:text-3xl font-bold text-[#52555b] font-roboto">
+            Você respondeu a todas as questões
+          </h2>
+          <p className="text-gray-500 mt-2 font-opensans">
+            Se quiser, pode voltar e rever suas respostas.
+          </p>
+        </div>
         
-        <div className="bg-white rounded-lg p-6 md:p-8 shadow-sm border text-center">
-          <div className={`inline-flex items-center justify-center w-16 h-16 md:w-24 md:h-24 rounded-full mb-4 md:mb-6 ${
-            passed ? 'bg-green-100' : 'bg-red-100'
-          }`}>
-            {passed ? (
-              <Award className="w-8 h-8 md:w-12 md:h-12 text-green-600" />
-            ) : (
-              <AlertCircle className="w-8 h-8 md:w-12 md:h-12 text-red-600" />
-            )}
-          </div>
-          
-          <h3 className={`text-xl md:text-2xl font-bold mb-3 md:mb-4 ${
-            passed ? 'text-green-600' : 'text-red-600'
-          }`}>
-            {passed ? 'Parabéns! Você foi aprovado!' : 'Você não atingiu a nota mínima'}
-          </h3>
-          
-          <p className="text-base md:text-lg text-[#52555b] mb-4 md:mb-6">
-            Sua pontuação: <span className="font-bold">{score}%</span>
+        {/* Resultado em porcentagem */}
+        <div className="text-center">
+          <p className="text-lg font-opensans">
+            Sua nota: <span className={`font-bold text-3xl ${passed ? 'text-green-600' : 'text-red-600'}`}>
+              {score}%
+            </span>
           </p>
-          
-          <p className="text-sm md:text-base text-[#52555b] mb-4 md:mb-6 px-4">
-            {passed 
-              ? 'Você demonstrou excelente conhecimento do eGestor e está qualificado como Expert!'
-              : 'Você precisa de pelo menos 80% para ser aprovado. Revise o conteúdo e tente novamente.'
-            }
+          <p className="text-sm text-gray-500 mt-1">
+            {correctCount} de {questions.length} questões corretas • Mínimo para aprovação: 80%
           </p>
-          
-          <div className="space-y-4">
-            <Button
-              onClick={handleShowResults}
-              variant="outline"
-              className="w-full border-[#d61c00] text-[#d61c00] hover:bg-[#d61c00] hover:text-white text-sm md:text-base"
-            >
-              Ver Respostas Detalhadas
-            </Button>
+        </div>
+        
+        {/* Gabarito compacto */}
+        <div className="bg-white rounded-lg p-6 shadow-sm border">
+          <h3 className="text-center font-semibold mb-4 text-[#52555b]">Gabarito</h3>
+          <div className="flex flex-wrap justify-center gap-2 md:gap-3">
+            {questions.map((question, index) => {
+              const userAnswer = answers[index];
+              const isCorrect = userAnswer !== null && question.options[userAnswer]?.correct;
+              const letter = indexToLetter(userAnswer);
+              
+              return (
+                <div 
+                  key={index}
+                  className={`flex flex-col items-center justify-center w-10 h-12 md:w-12 md:h-14 rounded-lg border-2 transition-all ${
+                    isCorrect 
+                      ? 'bg-green-100 border-green-500 text-green-700' 
+                      : 'bg-red-100 border-red-500 text-red-700'
+                  }`}
+                >
+                  <span className="text-[10px] md:text-xs text-gray-500">{index + 1}</span>
+                  <span className="font-bold text-base md:text-lg">{letter}</span>
+                </div>
+              );
+            })}
           </div>
+        </div>
+        
+        {/* Botões */}
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          {passed ? (
+            <>
+              <Button className="bg-[#d61c00] hover:bg-[#b01800] text-white px-8">
+                <Award className="w-4 h-4 mr-2" />
+                Receber certificado
+              </Button>
+              <Button 
+                variant="outline"
+                className="border-[#d61c00] text-[#d61c00] hover:bg-[#d61c00] hover:text-white px-8"
+                onClick={handleShowResults}
+              >
+                Ver respostas detalhadas
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button 
+                className="bg-[#d61c00] hover:bg-[#b01800] text-white px-8"
+                onClick={handleRetry}
+              >
+                Tentar novamente
+              </Button>
+              <Button 
+                variant="outline"
+                className="border-[#d61c00] text-[#d61c00] hover:bg-[#d61c00] hover:text-white px-8"
+                onClick={handleShowResults}
+              >
+                Ver respostas detalhadas
+              </Button>
+            </>
+          )}
         </div>
       </div>
     );
