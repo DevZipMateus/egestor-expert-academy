@@ -30,19 +30,32 @@ serve(async (req) => {
       .select(`
         *,
         exam:course_exams(
+          course_id,
           course:courses(titulo, slug)
-        ),
-        user:profiles(nome, email)
+        )
       `)
       .eq('id', examAttemptId)
       .single();
 
     if (attemptError || !attempt) {
+      console.error('Erro ao buscar tentativa:', attemptError);
       throw new Error('Tentativa de exame não encontrada');
     }
 
     if (!attempt.passed) {
       throw new Error('Aluno não foi aprovado no exame');
+    }
+
+    // Buscar perfil do usuário separadamente
+    const { data: profile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('nome, email')
+      .eq('id', attempt.user_id)
+      .single();
+
+    if (profileError || !profile) {
+      console.error('Erro ao buscar perfil:', profileError);
+      throw new Error('Perfil do usuário não encontrado');
     }
 
     // Verificar se já existe certificado
@@ -103,7 +116,7 @@ serve(async (req) => {
     const dataFormatada = dataEmissao.toLocaleDateString('pt-BR', opcoes);
 
     // Textos
-    const nomeAluno = attempt.user.nome;
+    const nomeAluno = profile.nome;
     const cursoTitulo = attempt.exam.course.titulo;
     const nota = `${attempt.score}%`;
     const fraseConclusao = `concluiu com êxito o curso "${cursoTitulo}"`;
