@@ -22,9 +22,9 @@ const CourseSidebar = () => {
   const currentSlide = parseInt(slide || '0');
   const { slides, loading, useStaticData, answeredSlides } = useCourseData();
 
-  // Verificar se o exame está desbloqueado (todos os 43 slides de conteúdo completados)
+  // Verificar se o exame está desbloqueado (todos os 46 slides de conteúdo completados)
   const isExamUnlocked = () => {
-    const contentSlides = Array.from({ length: 43 }, (_, i) => i + 1);
+    const contentSlides = Array.from({ length: 46 }, (_, i) => i + 1);
     return contentSlides.every(slideNum => answeredSlides.has(slideNum));
   };
 
@@ -98,9 +98,9 @@ const CourseSidebar = () => {
   const slideGroups = organizeSlidesByModule(slides);
 
   // Calcular progresso (excluindo introdução e exame)
-  // Slides de conteúdo: ordem 1-43, Exame: ordem 44, Introdução: ordem 0
-  const totalContentSlides = 43;
-  const completedSlides = Array.from(answeredSlides).filter(s => s >= 1 && s <= 43).length;
+  // Slides de conteúdo: ordem 1-46, Exame: ordem 47, Introdução: ordem -2 e -1
+  const totalContentSlides = 46;
+  const completedSlides = Array.from(answeredSlides).filter(s => s >= 1 && s <= 46).length;
   const progressPercentage = Math.round((completedSlides / totalContentSlides) * 100);
 
   return (
