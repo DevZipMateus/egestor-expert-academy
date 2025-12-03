@@ -16,9 +16,7 @@ const Index = () => {
       <div className="relative z-10">
         <header className="bg-opacity-95 shadow-sm bg-[#d61c00] text-primary-foreground">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <h1 style={{
-            color: '#52555b'
-          }} className="text-2xl font-bold font-roboto text-primary-foreground">
+            <h1 className="text-2xl font-bold font-roboto text-white">
               Expert eGestor Academy
             </h1>
           </div>
