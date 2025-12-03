@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Shield, ShieldOff, Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Shield, ShieldOff, Loader2, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -33,6 +34,7 @@ const AdminUsers = () => {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
     userId: string;
@@ -45,6 +47,16 @@ const AdminUsers = () => {
     admins: 0,
     students: 0
   });
+
+  // Filtrar usuários baseado no termo de busca
+  const filteredUsers = useMemo(() => {
+    if (!searchTerm.trim()) return users;
+    const term = searchTerm.toLowerCase();
+    return users.filter(user => 
+      user.nome.toLowerCase().includes(term) || 
+      user.email.toLowerCase().includes(term)
+    );
+  }, [users, searchTerm]);
 
   useEffect(() => {
     fetchUsers();
@@ -209,6 +221,22 @@ const AdminUsers = () => {
         </Card>
       </div>
 
+      {/* Campo de busca */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar por nome ou email..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10 max-w-md"
+        />
+        {searchTerm && (
+          <span className="text-sm text-muted-foreground ml-3">
+            {filteredUsers.length} resultado{filteredUsers.length !== 1 ? 's' : ''}
+          </span>
+        )}
+      </div>
+
       <div className="border rounded-lg">
         <Table>
           <TableHeader>
@@ -223,7 +251,7 @@ const AdminUsers = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
+            {filteredUsers.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="font-medium">{user.nome}</TableCell>
                 <TableCell>{user.email}</TableCell>
