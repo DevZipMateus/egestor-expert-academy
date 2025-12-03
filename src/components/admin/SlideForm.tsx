@@ -486,15 +486,108 @@ const SlideForm = ({ moduleId, courseId, slideId, onSave, onCancel }: SlideFormP
           </div>
 
           {formData.tipo === 'video' && (
-            <div>
-              <Label htmlFor="video_url">URL do Vídeo</Label>
-              <Input
-                id="video_url"
-                type="url"
-                value={formData.video_url}
-                onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
-                placeholder="https://youtube.com/watch?v=..."
-              />
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="video_url">URL do Vídeo</Label>
+                <Input
+                  id="video_url"
+                  type="url"
+                  value={formData.video_url}
+                  onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
+                  placeholder="https://youtube.com/watch?v=..."
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="conteudo_video" className="flex items-center gap-2">
+                  Texto Adicional (Opcional)
+                  <span className="text-xs text-muted-foreground font-normal">
+                    Aparece abaixo do vídeo
+                  </span>
+                </Label>
+                <div className="space-y-2">
+                  <div className="flex gap-2 flex-wrap">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const selection = window.getSelection()?.toString();
+                        if (selection) {
+                          const colored = `<span style="color: #d61c00;">${selection}</span>`;
+                          setFormData({ 
+                            ...formData, 
+                            conteudo: formData.conteudo.replace(selection, colored) 
+                          });
+                        } else {
+                          toast.info('Selecione um texto para aplicar a cor');
+                        }
+                      }}
+                      className="gap-1"
+                    >
+                      <div className="w-3 h-3 rounded-full bg-[#d61c00]" />
+                      Vermelho
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const selection = window.getSelection()?.toString();
+                        if (selection) {
+                          const colored = `<span style="color: #0066cc;">${selection}</span>`;
+                          setFormData({ 
+                            ...formData, 
+                            conteudo: formData.conteudo.replace(selection, colored) 
+                          });
+                        } else {
+                          toast.info('Selecione um texto para aplicar a cor');
+                        }
+                      }}
+                      className="gap-1"
+                    >
+                      <div className="w-3 h-3 rounded-full bg-[#0066cc]" />
+                      Azul
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const url = prompt('Digite a URL do link:');
+                        const text = prompt('Digite o texto do link:');
+                        if (url && text) {
+                          const link = `<a href="${url}" target="_blank" style="color: #d61c00; text-decoration: underline;">${text}</a>`;
+                          setFormData({ 
+                            ...formData, 
+                            conteudo: formData.conteudo + link 
+                          });
+                        }
+                      }}
+                      className="gap-1"
+                    >
+                      🔗 Inserir Link
+                    </Button>
+                  </div>
+                  <Textarea
+                    id="conteudo_video"
+                    value={formData.conteudo}
+                    onChange={(e) => setFormData({ ...formData, conteudo: e.target.value })}
+                    placeholder="Ex: Se desejar saber mais sobre este assunto, acesse nosso e-book..."
+                    rows={3}
+                    className="font-mono text-sm"
+                  />
+                  {formData.conteudo && (
+                    <div className="p-3 bg-muted rounded-md">
+                      <p className="text-xs text-muted-foreground mb-1">Preview:</p>
+                      <div 
+                        className="text-sm text-foreground"
+                        dangerouslySetInnerHTML={{ __html: formData.conteudo }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 

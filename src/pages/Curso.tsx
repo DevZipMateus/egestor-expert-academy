@@ -365,6 +365,7 @@ const Curso = () => {
           <VideoSlide 
             title={currentContent.title}
             videoUrl={currentContent.videoUrl || ''}
+            description={currentContent.content || undefined}
           />
         );
       
@@ -374,6 +375,7 @@ const Curso = () => {
             <VideoSlide 
               title={currentContent.title}
               videoUrl={currentContent.videoUrl}
+              description={currentContent.content || undefined}
             />
           );
         } else {
