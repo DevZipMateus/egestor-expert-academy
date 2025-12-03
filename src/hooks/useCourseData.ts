@@ -261,8 +261,8 @@ export const useCourseData = () => {
         aulasAssistidas.push(slideNumber);
         console.log('➕ Adicionando slide', slideNumber, 'à lista de assistidas');
         
-        // Calcular progresso percentual (43 slides de conteúdo, exclui introdução e exame)
-        const progressoPercentual = Math.round((aulasAssistidas.length / 43) * 100);
+        // Calcular progresso percentual (46 slides de conteúdo, exclui introdução e exame)
+        const progressoPercentual = Math.round((aulasAssistidas.length / 46) * 100);
         console.log('📊 Progresso percentual calculado:', progressoPercentual, '%');
         
         updateData.aulas_assistidas = aulasAssistidas;

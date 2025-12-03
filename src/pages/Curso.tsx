@@ -61,10 +61,10 @@ const Curso = () => {
     }
   }, [currentSlide, answeredSlides]);
 
-  // Verificar se o exame está acessível (todas as 43 aulas de conteúdo completadas)
+  // Verificar se o exame está acessível (todas as 46 aulas de conteúdo completadas)
   const isExamAccessible = () => {
-    // Slides 1-43 são conteúdo, 44 é o exame, 0 é introdução
-    const contentSlides = Array.from({ length: 43 }, (_, i) => i + 1);
+    // Slides 1-46 são conteúdo, 47 é o exame, -2 e -1 são introdução
+    const contentSlides = Array.from({ length: 46 }, (_, i) => i + 1);
     return contentSlides.every(slideNum => answeredSlides.has(slideNum));
   };
 
@@ -96,7 +96,7 @@ const Curso = () => {
       toast.error('Complete todos os slides anteriores para acessar o exame final.');
       
       // Encontrar o próximo slide não completado
-      const nextIncompleteSlide = Array.from({ length: 43 }, (_, i) => i + 1)
+      const nextIncompleteSlide = Array.from({ length: 46 }, (_, i) => i + 1)
         .find(slideNum => !answeredSlides.has(slideNum)) || 1;
       
       navigate(`/curso/${courseId}/${nextIncompleteSlide}`);
@@ -201,6 +201,11 @@ const Curso = () => {
     if (!canAdvance && currentContent?.type === 'exam') {
       toast.error("Você precisa completar o exame antes de continuar.");
       return;
+    }
+
+    // Marcar slide atual como assistido antes de avançar (exceto slides de introdução e exame)
+    if (currentSlide > 0 && currentContent?.type !== 'exam' && !answeredSlides.has(currentSlide)) {
+      markSlideAsAnswered(currentSlide);
     }
 
     // Encontrar próximo slide na lista ordenada
