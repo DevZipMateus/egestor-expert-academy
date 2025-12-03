@@ -555,8 +555,10 @@ export const useCourseData = () => {
       console.log('📦 Total de slides (dados estáticos):', getTotalSlides());
       return getTotalSlides();
     }
-    console.log('📊 Total de slides (banco de dados):', slides.length);
-    return slides.length;
+    // Contar apenas slides de conteúdo (ordem >= 1 e tipo !== 'exam')
+    const contentSlides = slides.filter(s => s.ordem >= 1 && s.tipo !== 'exam');
+    console.log('📊 Total de slides de conteúdo:', contentSlides.length);
+    return contentSlides.length;
   };
 
   return {
