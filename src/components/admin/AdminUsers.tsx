@@ -23,6 +23,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface UserData {
   id: string;
@@ -41,6 +48,7 @@ const AdminUsers = () => {
   const [loading, setLoading] = useState(true);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'funcionario' | 'user'>('all');
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
     userId: string;
@@ -55,15 +63,26 @@ const AdminUsers = () => {
     students: 0
   });
 
-  // Filtrar usuários baseado no termo de busca
+  // Filtrar usuários baseado no termo de busca e role
   const filteredUsers = useMemo(() => {
-    if (!searchTerm.trim()) return users;
-    const term = searchTerm.toLowerCase();
-    return users.filter(user => 
-      user.nome.toLowerCase().includes(term) || 
-      user.email.toLowerCase().includes(term)
-    );
-  }, [users, searchTerm]);
+    let result = users;
+    
+    // Filtrar por role
+    if (roleFilter !== 'all') {
+      result = result.filter(user => user.role === roleFilter);
+    }
+    
+    // Filtrar por termo de busca
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(user => 
+        user.nome.toLowerCase().includes(term) || 
+        user.email.toLowerCase().includes(term)
+      );
+    }
+    
+    return result;
+  }, [users, searchTerm, roleFilter]);
 
   useEffect(() => {
     fetchUsers();
@@ -239,17 +258,30 @@ const AdminUsers = () => {
         </Card>
       </div>
 
-      {/* Campo de busca */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          placeholder="Buscar por nome ou email..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 max-w-md"
-        />
-        {searchTerm && (
-          <span className="text-sm text-muted-foreground ml-3">
+      {/* Campo de busca e filtro */}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nome ou email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Select value={roleFilter} onValueChange={(value: 'all' | 'admin' | 'funcionario' | 'user') => setRoleFilter(value)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filtrar por role" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="admin">Administradores</SelectItem>
+            <SelectItem value="funcionario">Funcionários</SelectItem>
+            <SelectItem value="user">Estudantes</SelectItem>
+          </SelectContent>
+        </Select>
+        {(searchTerm || roleFilter !== 'all') && (
+          <span className="text-sm text-muted-foreground">
             {filteredUsers.length} resultado{filteredUsers.length !== 1 ? 's' : ''}
           </span>
         )}
