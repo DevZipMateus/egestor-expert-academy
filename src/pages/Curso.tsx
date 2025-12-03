@@ -286,8 +286,6 @@ const Curso = () => {
     }
 
     try {
-      toast.loading('Gerando certificado...');
-      
       const { data: { session } } = await supabase.auth.getSession();
       
       const response = await fetch(
@@ -301,8 +299,6 @@ const Curso = () => {
           body: JSON.stringify({ examAttemptId: currentExamAttemptId }),
         }
       );
-
-      toast.dismiss();
 
       if (response.ok) {
         const blob = await response.blob();
@@ -328,7 +324,6 @@ const Curso = () => {
         }
       }
     } catch (error) {
-      toast.dismiss();
       console.error('Erro ao gerar certificado:', error);
       toast.error('Erro ao gerar certificado. Verifique sua conexão.');
     }

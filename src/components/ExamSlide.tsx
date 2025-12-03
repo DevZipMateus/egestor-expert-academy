@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Check, X, Award, AlertCircle } from "lucide-react";
+import { Check, X, Award, AlertCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface ExamQuestion {
@@ -28,6 +28,7 @@ const ExamSlide: React.FC<ExamSlideProps> = ({ title, getExamQuestions, onExamCo
   const [score, setScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null); // em segundos
+  const [certificateLoading, setCertificateLoading] = useState(false);
 
   useEffect(() => {
     const loadQuestions = async () => {
@@ -231,16 +232,26 @@ const ExamSlide: React.FC<ExamSlideProps> = ({ title, getExamQuestions, onExamCo
             <>
               <Button 
                 className="bg-[#d61c00] hover:bg-[#b01800] text-white px-8"
+                disabled={certificateLoading}
                 onClick={async () => {
                   if (onRequestCertificate) {
-                    await onRequestCertificate();
+                    setCertificateLoading(true);
+                    try {
+                      await onRequestCertificate();
+                    } finally {
+                      setCertificateLoading(false);
+                    }
                   } else {
                     toast.info('O certificado será enviado automaticamente.');
                   }
                 }}
               >
-                <Award className="w-4 h-4 mr-2" />
-                Receber certificado
+                {certificateLoading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Award className="w-4 h-4 mr-2" />
+                )}
+                {certificateLoading ? 'Gerando...' : 'Receber certificado'}
               </Button>
               <Button 
                 variant="outline"
