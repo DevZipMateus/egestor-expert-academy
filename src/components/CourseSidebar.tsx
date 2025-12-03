@@ -12,20 +12,54 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { useCourseData } from '@/hooks/useCourseData';
-import { Play, HelpCircle, AlertTriangle, FileText, Trophy, Lock, BookOpen } from 'lucide-react';
+import { Play, HelpCircle, AlertTriangle, FileText, Trophy, Lock, BookOpen, FastForward } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const CourseSidebar = () => {
   const navigate = useNavigate();
   const { slide, courseId } = useParams();
   const currentSlide = parseInt(slide || '0');
   const { slides, loading, useStaticData, answeredSlides } = useCourseData();
+  const { user } = useAuth();
+  const { isAdmin } = useUserRole(user?.email || null);
 
   // Verificar se o exame está desbloqueado (todos os 46 slides de conteúdo completados)
   const isExamUnlocked = () => {
     const contentSlides = Array.from({ length: 46 }, (_, i) => i + 1);
     return contentSlides.every(slideNum => answeredSlides.has(slideNum));
+  };
+
+  // Função para admins pularem todos os slides
+  const handleSkipAllSlides = async () => {
+    if (!user || !courseId) return;
+    
+    try {
+      const allContentSlides = Array.from({ length: 46 }, (_, i) => i + 1);
+      
+      const { error } = await supabase
+        .from('progresso_usuario')
+        .update({
+          aulas_assistidas: allContentSlides,
+          progresso_percentual: 100,
+          data_atualizacao: new Date().toISOString()
+        })
+        .eq('usuario_id', user.id)
+        .eq('course_id', courseId);
+      
+      if (error) throw error;
+      
+      toast.success('Todos os slides foram marcados como assistidos!');
+      window.location.reload();
+    } catch (error) {
+      console.error('Erro ao pular slides:', error);
+      toast.error('Erro ao pular slides. Tente novamente.');
+    }
   };
 
   const getSlideIcon = (type: string, isIntro: boolean = false) => {
@@ -133,6 +167,21 @@ const CourseSidebar = () => {
             {completedSlides} de {totalContentSlides} slides completados
           </p>
         </div>
+        
+        {/* Botão para admins pularem todos os slides */}
+        {isAdmin && (
+          <div className="px-3 md:px-4 py-2 border-b border-gray-200">
+            <Button
+              onClick={handleSkipAllSlides}
+              variant="outline"
+              size="sm"
+              className="w-full text-orange-600 border-orange-300 hover:bg-orange-50"
+            >
+              <FastForward className="h-4 w-4 mr-2" />
+              Pular todos (Admin)
+            </Button>
+          </div>
+        )}
         
         <div className="overflow-y-auto">
           {slideGroups.map((group, groupIndex) => (
