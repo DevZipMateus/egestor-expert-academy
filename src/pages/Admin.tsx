@@ -1,14 +1,17 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Settings, User, LogOut, ArrowLeft } from 'lucide-react';
+import { Settings, User, LogOut, ArrowLeft, BookOpen, Users } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AdminCourses from '@/components/admin/AdminCourses';
+import AdminUsers from '@/components/admin/AdminUsers';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Admin = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const [activeTab, setActiveTab] = useState('courses');
 
   const handleLogout = async () => {
     await signOut();
@@ -72,7 +75,24 @@ const Admin = () => {
 
         {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <AdminCourses />
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="mb-6">
+              <TabsTrigger value="courses" className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4" />
+                Cursos
+              </TabsTrigger>
+              <TabsTrigger value="users" className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                Usuários
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="courses">
+              <AdminCourses />
+            </TabsContent>
+            <TabsContent value="users">
+              <AdminUsers />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </ProtectedRoute>
