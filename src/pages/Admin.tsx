@@ -1,7 +1,7 @@
 
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Settings, User, LogOut } from 'lucide-react';
+import { Settings, User, LogOut, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AdminCourses from '@/components/admin/AdminCourses';
@@ -31,6 +31,14 @@ const Admin = () => {
                 </h1>
               </div>
               <div className="flex items-center gap-4">
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/dashboard')}
+                  className="flex items-center gap-2"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Voltar para Cursos
+                </Button>
                 <div className="flex items-center gap-2">
                   <User className="w-5 h-5 text-gray-600" />
                   <span className="font-opensans text-gray-700">{user?.email}</span>
