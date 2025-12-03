@@ -907,12 +907,12 @@ const SlideForm = ({ moduleId, courseId, slideId, onSave, onCancel }: SlideFormP
                 </SelectTrigger>
                 <SelectContent>
                   {exams.length === 0 ? (
-                    <SelectItem value="" disabled>
+                    <SelectItem value="no-exam" disabled>
                       Nenhum exame disponível
                     </SelectItem>
                   ) : (
                     exams.map((exam) => (
-                      <SelectItem key={exam.id} value={exam.id}>
+                      <SelectItem key={exam.id} value={exam.id || `exam-${exam.titulo}`}>
                         {exam.titulo}
                       </SelectItem>
                     ))
