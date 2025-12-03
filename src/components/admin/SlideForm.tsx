@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Plus, Trash2, AlertCircle, Upload } from 'lucide-react';
+import { Plus, Trash2, AlertCircle, Upload, Bold, Link as LinkIcon } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface SlideFormProps {
@@ -592,15 +592,129 @@ const SlideForm = ({ moduleId, courseId, slideId, onSave, onCancel }: SlideFormP
           )}
 
           {formData.tipo === 'content' && (
-            <div>
+            <div className="space-y-3">
               <Label htmlFor="conteudo">Conteúdo</Label>
+              
+              {/* Barra de ferramentas de formatação */}
+              <div className="flex gap-2 flex-wrap border rounded-md p-2 bg-muted/30">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    const textarea = document.getElementById('conteudo-content') as HTMLTextAreaElement;
+                    if (textarea) {
+                      const start = textarea.selectionStart;
+                      const end = textarea.selectionEnd;
+                      const selectedText = formData.conteudo.substring(start, end);
+                      if (selectedText) {
+                        const newText = formData.conteudo.substring(0, start) + 
+                          `<strong>${selectedText}</strong>` + 
+                          formData.conteudo.substring(end);
+                        setFormData({ ...formData, conteudo: newText });
+                      }
+                    }
+                  }}
+                  className="gap-1"
+                >
+                  <Bold className="h-4 w-4" />
+                  Negrito
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    const textarea = document.getElementById('conteudo-content') as HTMLTextAreaElement;
+                    if (textarea) {
+                      const start = textarea.selectionStart;
+                      const end = textarea.selectionEnd;
+                      const selectedText = formData.conteudo.substring(start, end);
+                      if (selectedText) {
+                        const newText = formData.conteudo.substring(0, start) + 
+                          `<span style="color: #d61c00;">${selectedText}</span>` + 
+                          formData.conteudo.substring(end);
+                        setFormData({ ...formData, conteudo: newText });
+                      }
+                    }
+                  }}
+                  className="gap-1"
+                >
+                  <span className="w-3 h-3 rounded-full bg-red-500"></span>
+                  Vermelho
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    const textarea = document.getElementById('conteudo-content') as HTMLTextAreaElement;
+                    if (textarea) {
+                      const start = textarea.selectionStart;
+                      const end = textarea.selectionEnd;
+                      const selectedText = formData.conteudo.substring(start, end);
+                      if (selectedText) {
+                        const newText = formData.conteudo.substring(0, start) + 
+                          `<span style="color: #0066cc;">${selectedText}</span>` + 
+                          formData.conteudo.substring(end);
+                        setFormData({ ...formData, conteudo: newText });
+                      }
+                    }
+                  }}
+                  className="gap-1"
+                >
+                  <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+                  Azul
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    const textarea = document.getElementById('conteudo-content') as HTMLTextAreaElement;
+                    if (textarea) {
+                      const start = textarea.selectionStart;
+                      const end = textarea.selectionEnd;
+                      const selectedText = formData.conteudo.substring(start, end);
+                      if (selectedText) {
+                        const url = prompt('Digite a URL do link:');
+                        if (url) {
+                          const newText = formData.conteudo.substring(0, start) + 
+                            `<a href="${url}" target="_blank" style="color: #d61c00; text-decoration: underline;">${selectedText}</a>` + 
+                            formData.conteudo.substring(end);
+                          setFormData({ ...formData, conteudo: newText });
+                        }
+                      }
+                    }
+                  }}
+                  className="gap-1"
+                >
+                  <LinkIcon className="h-4 w-4" />
+                  Link
+                </Button>
+              </div>
+              
+              <p className="text-xs text-muted-foreground">
+                Selecione o texto e clique no botão para aplicar a formatação
+              </p>
+              
               <Textarea
-                id="conteudo"
+                id="conteudo-content"
                 value={formData.conteudo}
                 onChange={(e) => setFormData({ ...formData, conteudo: e.target.value })}
                 rows={6}
                 placeholder="Digite o conteúdo do slide..."
               />
+              
+              {formData.conteudo && (
+                <div className="p-3 bg-muted rounded-md">
+                  <p className="text-xs text-muted-foreground mb-1">Como ficará:</p>
+                  <div 
+                    className="text-sm text-foreground"
+                    dangerouslySetInnerHTML={{ __html: formData.conteudo }}
+                  />
+                </div>
+              )}
             </div>
           )}
 
