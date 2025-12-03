@@ -1,4 +1,4 @@
-
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Settings, User, LogOut, ArrowLeft } from 'lucide-react';
@@ -14,6 +14,19 @@ const Admin = () => {
     await signOut();
     navigate('/auth');
   };
+
+  // Atalho de teclado: Escape para voltar ao dashboard
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (e.key === 'Escape' && !target?.closest?.('input, textarea, [contenteditable]')) {
+        navigate('/dashboard');
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [navigate]);
 
   return (
     <ProtectedRoute requireAdmin>
