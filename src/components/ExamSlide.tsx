@@ -14,10 +14,11 @@ interface ExamSlideProps {
   title: string;
   getExamQuestions: () => Promise<ExamQuestion[]>;
   onExamComplete: (score: number, passed: boolean, answers: any[]) => void;
+  onRequestCertificate?: () => Promise<void>;
   timeLimit?: number | null; // Time limit in minutes
 }
 
-const ExamSlide: React.FC<ExamSlideProps> = ({ title, getExamQuestions, onExamComplete, timeLimit }) => {
+const ExamSlide: React.FC<ExamSlideProps> = ({ title, getExamQuestions, onExamComplete, onRequestCertificate, timeLimit }) => {
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -228,7 +229,16 @@ const ExamSlide: React.FC<ExamSlideProps> = ({ title, getExamQuestions, onExamCo
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           {passed ? (
             <>
-              <Button className="bg-[#d61c00] hover:bg-[#b01800] text-white px-8">
+              <Button 
+                className="bg-[#d61c00] hover:bg-[#b01800] text-white px-8"
+                onClick={async () => {
+                  if (onRequestCertificate) {
+                    await onRequestCertificate();
+                  } else {
+                    toast.info('O certificado será enviado automaticamente.');
+                  }
+                }}
+              >
                 <Award className="w-4 h-4 mr-2" />
                 Receber certificado
               </Button>

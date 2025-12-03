@@ -28,6 +28,7 @@ const Curso = () => {
   const [exerciseAnswered, setExerciseAnswered] = useState<boolean>(false);
   const [examTimeLimit, setExamTimeLimit] = useState<number | null>(null);
   const [maxVisitedSlide, setMaxVisitedSlide] = useState<number>(1);
+  const [currentExamAttemptId, setCurrentExamAttemptId] = useState<string | null>(null);
   const currentSlide = parseInt(slide || '1');
   const prevSlideRef = useRef<number>(currentSlide);
   
@@ -265,6 +266,7 @@ const Curso = () => {
     }
 
     const examAttemptId = result.data?.id;
+    setCurrentExamAttemptId(examAttemptId);
 
     setExamScore(score);
     setExamPassed(passed);
@@ -272,43 +274,63 @@ const Curso = () => {
     
     if (passed) {
       toast.success(`Parabéns! Você foi aprovado com ${score}%! 🎉`);
-      
-      // Gerar certificado automaticamente
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-certificate`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${session?.access_token}`,
-            },
-            body: JSON.stringify({ examAttemptId }),
-          }
-        );
-
-        if (response.ok) {
-          const blob = await response.blob();
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `certificado-${examAttemptId}.pdf`;
-          document.body.appendChild(a);
-          a.click();
-          window.URL.revokeObjectURL(url);
-          document.body.removeChild(a);
-          
-          toast.success('Seu certificado foi gerado e baixado automaticamente! 📜');
-        } else {
-          console.error('Erro ao gerar certificado:', await response.text());
-        }
-      } catch (error) {
-        console.error('Erro ao gerar certificado:', error);
-      }
     } else {
       toast.error(`Você obteve ${score}%. É necessário 80% para aprovação.`);
+    }
+  };
+
+  const handleRequestCertificate = async () => {
+    if (!currentExamAttemptId) {
+      toast.error('Erro: ID do exame não encontrado. Tente novamente.');
+      return;
+    }
+
+    try {
+      toast.loading('Gerando certificado...');
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-certificate`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({ examAttemptId: currentExamAttemptId }),
+        }
+      );
+
+      toast.dismiss();
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `certificado-${currentExamAttemptId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        toast.success('Certificado baixado com sucesso! 📜');
+      } else {
+        const errorText = await response.text();
+        console.error('Erro ao gerar certificado:', errorText);
+        
+        // Verificar se o certificado já foi gerado anteriormente
+        if (errorText.includes('já foi gerado')) {
+          toast.info('Este certificado já foi gerado anteriormente.');
+        } else {
+          toast.error('Erro ao gerar certificado. Tente novamente.');
+        }
+      }
+    } catch (error) {
+      toast.dismiss();
+      console.error('Erro ao gerar certificado:', error);
+      toast.error('Erro ao gerar certificado. Verifique sua conexão.');
     }
   };
 
@@ -435,6 +457,7 @@ const Curso = () => {
             title={currentContent.title}
             getExamQuestions={() => getExamQuestions(currentContent.examId || undefined)}
             onExamComplete={handleExamComplete}
+            onRequestCertificate={handleRequestCertificate}
             timeLimit={examTimeLimit}
           />
         );
