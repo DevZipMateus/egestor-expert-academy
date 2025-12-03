@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Shield, ShieldOff, Loader2, Search } from 'lucide-react';
+import { Shield, ShieldOff, Loader2, Search, ChevronDown, Building2, GraduationCap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -17,6 +17,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface UserData {
   id: string;
@@ -39,12 +45,13 @@ const AdminUsers = () => {
     open: boolean;
     userId: string;
     userName: string;
-    newRole: 'admin' | 'user';
+    newRole: 'admin' | 'funcionario' | 'user';
   } | null>(null);
   const { toast } = useToast();
   const [stats, setStats] = useState({
     totalUsers: 0,
     admins: 0,
+    funcionarios: 0,
     students: 0
   });
 
@@ -106,9 +113,10 @@ const AdminUsers = () => {
       // Calcular estatísticas
       const totalUsers = usersWithData.length;
       const admins = usersWithData.filter(u => u.role === 'admin').length;
+      const funcionarios = usersWithData.filter(u => u.role === 'funcionario').length;
       const students = usersWithData.filter(u => u.role === 'user').length;
 
-      setStats({ totalUsers, admins, students });
+      setStats({ totalUsers, admins, funcionarios, students });
 
     } catch (error) {
       console.error('Erro ao buscar usuários:', error);
@@ -117,7 +125,7 @@ const AdminUsers = () => {
     }
   };
 
-  const handleRoleChange = async (userId: string, newRole: 'admin' | 'user') => {
+  const handleRoleChange = async (userId: string, newRole: 'admin' | 'funcionario' | 'user') => {
     setUpdatingUserId(userId);
     try {
       // Verificar se já existe um registro de role para este usuário
@@ -158,12 +166,14 @@ const AdminUsers = () => {
         u.id === userId ? { ...u, role: newRole } : u
       );
       const admins = updatedUsers.filter(u => u.role === 'admin').length;
+      const funcionarios = updatedUsers.filter(u => u.role === 'funcionario').length;
       const students = updatedUsers.filter(u => u.role === 'user').length;
-      setStats({ totalUsers: updatedUsers.length, admins, students });
+      setStats({ totalUsers: updatedUsers.length, admins, funcionarios, students });
 
+      const roleLabel = newRole === 'admin' ? 'Administrador' : newRole === 'funcionario' ? 'Funcionário' : 'Estudante';
       toast({
         title: 'Role atualizado',
-        description: `Usuário agora é ${newRole === 'admin' ? 'Administrador' : 'Estudante'}.`,
+        description: `Usuário agora é ${roleLabel}.`,
       });
 
     } catch (error: any) {
@@ -179,7 +189,7 @@ const AdminUsers = () => {
     }
   };
 
-  const openConfirmDialog = (user: UserData, newRole: 'admin' | 'user') => {
+  const openConfirmDialog = (user: UserData, newRole: 'admin' | 'funcionario' | 'user') => {
     setConfirmDialog({
       open: true,
       userId: user.id,
@@ -194,7 +204,7 @@ const AdminUsers = () => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
@@ -209,6 +219,14 @@ const AdminUsers = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">{stats.admins}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Funcionários</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-amber-600">{stats.funcionarios}</div>
           </CardContent>
         </Card>
         <Card>
@@ -256,8 +274,11 @@ const AdminUsers = () => {
                 <TableCell className="font-medium">{user.nome}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>
-                  <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                    {user.role === 'admin' ? 'Admin' : 'Estudante'}
+                  <Badge 
+                    variant={user.role === 'admin' ? 'default' : 'secondary'}
+                    className={user.role === 'funcionario' ? 'bg-amber-100 text-amber-800 border-amber-200' : ''}
+                  >
+                    {user.role === 'admin' ? 'Admin' : user.role === 'funcionario' ? 'Funcionário' : 'Estudante'}
                   </Badge>
                 </TableCell>
                 <TableCell>
@@ -273,40 +294,37 @@ const AdminUsers = () => {
                   {new Date(user.created_at).toLocaleDateString('pt-BR')}
                 </TableCell>
                 <TableCell className="text-right">
-                  {user.role === 'admin' ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openConfirmDialog(user, 'user')}
-                      disabled={updatingUserId === user.id}
-                      className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                    >
-                      {updatingUserId === user.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <>
-                          <ShieldOff className="w-4 h-4 mr-1" />
-                          Remover Admin
-                        </>
-                      )}
-                    </Button>
+                  {updatingUserId === user.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin ml-auto" />
                   ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openConfirmDialog(user, 'admin')}
-                      disabled={updatingUserId === user.id}
-                      className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
-                    >
-                      {updatingUserId === user.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Shield className="w-4 h-4 mr-1" />
-                          Tornar Admin
-                        </>
-                      )}
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          Alterar Role
+                          <ChevronDown className="w-4 h-4 ml-1" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {user.role !== 'admin' && (
+                          <DropdownMenuItem onClick={() => openConfirmDialog(user, 'admin')}>
+                            <Shield className="w-4 h-4 mr-2 text-purple-600" />
+                            Tornar Admin
+                          </DropdownMenuItem>
+                        )}
+                        {user.role !== 'funcionario' && (
+                          <DropdownMenuItem onClick={() => openConfirmDialog(user, 'funcionario')}>
+                            <Building2 className="w-4 h-4 mr-2 text-amber-600" />
+                            Tornar Funcionário
+                          </DropdownMenuItem>
+                        )}
+                        {user.role !== 'user' && (
+                          <DropdownMenuItem onClick={() => openConfirmDialog(user, 'user')}>
+                            <GraduationCap className="w-4 h-4 mr-2 text-blue-600" />
+                            Tornar Estudante
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
                 </TableCell>
               </TableRow>
@@ -322,12 +340,16 @@ const AdminUsers = () => {
             <AlertDialogTitle>
               {confirmDialog?.newRole === 'admin' 
                 ? 'Promover a Administrador?' 
-                : 'Remover acesso de Administrador?'}
+                : confirmDialog?.newRole === 'funcionario'
+                ? 'Definir como Funcionário?'
+                : 'Alterar para Estudante?'}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmDialog?.newRole === 'admin' 
                 ? `${confirmDialog?.userName} terá acesso total ao painel administrativo, incluindo gerenciamento de cursos, usuários e certificados.`
-                : `${confirmDialog?.userName} perderá acesso ao painel administrativo e voltará a ser um estudante comum.`}
+                : confirmDialog?.newRole === 'funcionario'
+                ? `${confirmDialog?.userName} será marcado como funcionário da Zipline.`
+                : `${confirmDialog?.userName} será definido como estudante comum.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -336,9 +358,11 @@ const AdminUsers = () => {
               onClick={() => confirmDialog && handleRoleChange(confirmDialog.userId, confirmDialog.newRole)}
               className={confirmDialog?.newRole === 'admin' 
                 ? 'bg-purple-600 hover:bg-purple-700' 
-                : 'bg-orange-600 hover:bg-orange-700'}
+                : confirmDialog?.newRole === 'funcionario'
+                ? 'bg-amber-600 hover:bg-amber-700'
+                : 'bg-blue-600 hover:bg-blue-700'}
             >
-              {confirmDialog?.newRole === 'admin' ? 'Promover' : 'Remover'}
+              Confirmar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
