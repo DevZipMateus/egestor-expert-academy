@@ -267,7 +267,10 @@ const CourseDetails = ({ course, onBack }: CourseDetailsProps) => {
                               <ChevronRight className="w-4 h-4" />
                             )}
                           </Button>
-                          <div className="flex-1">
+                        <div 
+                          className="flex-1 cursor-pointer"
+                          onClick={() => toggleModuleExpansion(module.id)}
+                        >
                             <div className="flex items-center gap-3">
                               <CardTitle className="text-base font-opensans">
                                 {module.titulo}
