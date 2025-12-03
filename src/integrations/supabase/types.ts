@@ -164,6 +164,27 @@ export type Database = {
             referencedRelation: "exam_attempts"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_certificates_course"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_certificates_exam_attempt"
+            columns: ["exam_attempt_id"]
+            isOneToOne: false
+            referencedRelation: "exam_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_certificates_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       course_exams: {
