@@ -7,6 +7,11 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Menu, Settings } from 'lucide-react';
 
+const isValidEmail = (email: string) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
 export default function Auth() {
   const [email, setEmail] = useState('');
   const [nome, setNome] = useState('');
@@ -29,8 +34,18 @@ export default function Auth() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!nome.trim() || !email.trim()) {
-      toast.error('Preencha todos os campos');
+    if (!nome.trim()) {
+      toast.error('Digite seu nome completo');
+      return;
+    }
+
+    if (!email.trim()) {
+      toast.error('Digite seu e-mail');
+      return;
+    }
+
+    if (!isValidEmail(email.trim())) {
+      toast.error('Digite um e-mail válido');
       return;
     }
 
