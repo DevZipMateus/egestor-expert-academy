@@ -16,6 +16,7 @@ export default function Auth() {
   const [email, setEmail] = useState('');
   const [nome, setNome] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ nome?: boolean; email?: boolean }>({});
   const { signInInstant, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -34,18 +35,24 @@ export default function Auth() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    const newErrors: { nome?: boolean; email?: boolean } = {};
+    
     if (!nome.trim()) {
+      newErrors.nome = true;
       toast.error('Digite seu nome completo');
-      return;
     }
 
     if (!email.trim()) {
-      toast.error('Digite seu e-mail');
-      return;
+      newErrors.email = true;
+      if (!newErrors.nome) toast.error('Digite seu e-mail');
+    } else if (!isValidEmail(email.trim())) {
+      newErrors.email = true;
+      if (!newErrors.nome) toast.error('Digite um e-mail válido');
     }
 
-    if (!isValidEmail(email.trim())) {
-      toast.error('Digite um e-mail válido');
+    setErrors(newErrors);
+
+    if (newErrors.nome || newErrors.email) {
       return;
     }
 
@@ -60,9 +67,7 @@ export default function Auth() {
     }
 
     if (action_link) {
-      // Redirect to magic link immediately
       window.location.href = action_link;
-      // Don't set loading to false as we're redirecting
     }
   };
 
@@ -89,33 +94,53 @@ export default function Auth() {
 
             <form onSubmit={handleSubmit} className="space-y-8">
               <div className="space-y-2">
-                <Label htmlFor="nome" className="text-[hsl(0,0%,25%)] text-base">
+                <Label htmlFor="nome" className={`text-base ${errors.nome ? 'text-red-500' : 'text-[hsl(0,0%,25%)]'}`}>
                   Nome completo *
                 </Label>
                 <Input
                   id="nome"
                   type="text"
                   value={nome}
-                  onChange={(e) => setNome(e.target.value)}
+                  onChange={(e) => {
+                    setNome(e.target.value);
+                    if (errors.nome) setErrors(prev => ({ ...prev, nome: false }));
+                  }}
                   required
-                  className="h-12 bg-white border-[hsl(0,0%,70%)] rounded-lg"
+                  className={`h-12 bg-white rounded-lg transition-colors ${
+                    errors.nome 
+                      ? 'border-red-500 border-2 focus-visible:ring-red-500' 
+                      : 'border-[hsl(0,0%,70%)]'
+                  }`}
                   placeholder="Digite seu nome completo"
                 />
+                {errors.nome && (
+                  <p className="text-red-500 text-sm">Campo obrigatório</p>
+                )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-[hsl(0,0%,25%)] text-base">
+                <Label htmlFor="email" className={`text-base ${errors.email ? 'text-red-500' : 'text-[hsl(0,0%,25%)]'}`}>
                   Endereço de e-mail *
                 </Label>
                 <Input
                   id="email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (errors.email) setErrors(prev => ({ ...prev, email: false }));
+                  }}
                   required
-                  className="h-12 bg-white border-[hsl(0,0%,70%)] rounded-lg"
+                  className={`h-12 bg-white rounded-lg transition-colors ${
+                    errors.email 
+                      ? 'border-red-500 border-2 focus-visible:ring-red-500' 
+                      : 'border-[hsl(0,0%,70%)]'
+                  }`}
                   placeholder="Digite seu e-mail"
                 />
+                {errors.email && (
+                  <p className="text-red-500 text-sm">E-mail inválido ou não preenchido</p>
+                )}
               </div>
 
               <div className="pt-8">
