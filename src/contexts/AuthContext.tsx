@@ -5,7 +5,7 @@ import { User, Session } from '@supabase/supabase-js';
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  signInWithMagicLink: (email: string, nome: string) => Promise<{ error: any }>;
+  signInInstant: (email: string, nome: string) => Promise<{ error: any; action_link?: string }>;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
   loading: boolean;
@@ -14,7 +14,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
-  signInWithMagicLink: async () => ({ error: null }),
+  signInInstant: async () => ({ error: null }),
   signOut: async () => {},
   isAuthenticated: false,
   loading: true,
@@ -53,17 +53,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const signInWithMagicLink = async (email: string, nome: string) => {
-    const redirectUrl = `${window.location.origin}/auth/callback`;
-    
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: { nome },
+  const signInInstant = async (email: string, nome: string) => {
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(`${supabaseUrl}/functions/v1/instant-login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          name: nome,
+          redirectTo: `${window.location.origin}/auth/callback`,
+          supabaseUrl: supabaseUrl
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('[AuthContext] Error from instant-login:', errorData);
+        return { error: errorData };
       }
-    });
-    return { error };
+
+      const data = await response.json();
+      return { error: null, action_link: data.action_link };
+    } catch (error) {
+      console.error('[AuthContext] Error calling instant login:', error);
+      return { error };
+    }
   };
 
   const signOut = async () => {
@@ -73,7 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isAuthenticated = !!user;
 
   return (
-    <AuthContext.Provider value={{ user, session, signInWithMagicLink, signOut, isAuthenticated, loading }}>
+    <AuthContext.Provider value={{ user, session, signInInstant, signOut, isAuthenticated, loading }}>
       {children}
     </AuthContext.Provider>
   );
