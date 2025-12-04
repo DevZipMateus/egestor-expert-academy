@@ -15,10 +15,11 @@ interface ExamSlideProps {
   getExamQuestions: () => Promise<ExamQuestion[]>;
   onExamComplete: (score: number, passed: boolean, answers: any[]) => void;
   onRequestCertificate?: () => Promise<void>;
+  onGoBackToSlides?: () => void;
   timeLimit?: number | null; // Time limit in minutes
 }
 
-const ExamSlide: React.FC<ExamSlideProps> = ({ title, getExamQuestions, onExamComplete, onRequestCertificate, timeLimit }) => {
+const ExamSlide: React.FC<ExamSlideProps> = ({ title, getExamQuestions, onExamComplete, onRequestCertificate, onGoBackToSlides, timeLimit }) => {
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -276,6 +277,15 @@ const ExamSlide: React.FC<ExamSlideProps> = ({ title, getExamQuestions, onExamCo
               >
                 Ver respostas detalhadas
               </Button>
+              {onGoBackToSlides && (
+                <Button 
+                  variant="ghost"
+                  className="text-gray-600 hover:text-gray-800 px-8"
+                  onClick={onGoBackToSlides}
+                >
+                  Voltar aos slides
+                </Button>
+              )}
             </>
           )}
         </div>
