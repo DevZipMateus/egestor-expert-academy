@@ -12,7 +12,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { useCourseData } from '@/hooks/useCourseData';
-import { Play, HelpCircle, AlertTriangle, FileText, Trophy, Lock, BookOpen, FastForward } from 'lucide-react';
+import { Play, HelpCircle, AlertTriangle, FileText, Trophy, Lock, BookOpen, FastForward, CheckCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -239,6 +239,9 @@ const CourseSidebar = () => {
                               {slideData.titulo}
                             </div>
                           </div>
+                          {isVisited && !isActive && (
+                            <CheckCircle className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0 text-green-500" />
+                          )}
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     );
