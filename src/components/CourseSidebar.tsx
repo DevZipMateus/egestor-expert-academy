@@ -137,6 +137,42 @@ const CourseSidebar = () => {
   const completedSlides = Array.from(answeredSlides).filter(s => s >= 1 && s <= 46).length;
   const progressPercentage = Math.round((completedSlides / totalContentSlides) * 100);
 
+  // Calcular o próximo slide disponível (primeiro não visitado)
+  const getNextAvailableSlide = () => {
+    const sortedSlides = [...slides].sort((a, b) => a.ordem - b.ordem);
+    for (const slide of sortedSlides) {
+      // Slides de intro são sempre acessíveis
+      if (slide.ordem < 0) continue;
+      // Slides de exame têm regra própria
+      if (slide.tipo === 'exam') continue;
+      // Encontrar primeiro slide não visitado
+      if (!answeredSlides.has(slide.ordem)) {
+        return slide.ordem;
+      }
+    }
+    return 47; // Todos completados, libera exame
+  };
+
+  const nextAvailableSlide = getNextAvailableSlide();
+
+  // Verificar se um slide está acessível
+  const isSlideAccessible = (slideOrder: number, slideType: string) => {
+    // Admins podem acessar qualquer slide
+    if (isAdmin) return true;
+    // Slides de introdução são sempre acessíveis
+    if (slideOrder < 0) return true;
+    // Slide atual é acessível
+    if (slideOrder === currentSlide) return true;
+    // Slides já visitados são acessíveis
+    if (answeredSlides.has(slideOrder)) return true;
+    // O próximo slide disponível é acessível
+    if (slideOrder === nextAvailableSlide) return true;
+    // Exame tem regra própria
+    if (slideType === 'exam') return isExamUnlocked();
+    // Outros slides não são acessíveis
+    return false;
+  };
+
   return (
     <Sidebar collapsible="offcanvas" className="bg-white border-r border-gray-200">
       <SidebarContent>
@@ -194,7 +230,9 @@ const CourseSidebar = () => {
                   {group.slides.map((slideData) => {
                     const isIntroSlide = slideData.ordem < 0;
                     const isExamSlide = slideData.tipo === 'exam';
-                    const isLocked = isExamSlide && !isExamUnlocked();
+                    const isExamLocked = isExamSlide && !isExamUnlocked();
+                    const isAccessible = isSlideAccessible(slideData.ordem, slideData.tipo);
+                    const isLocked = !isAccessible || isExamLocked;
                     const Icon = isLocked ? Lock : getSlideIcon(slideData.tipo, isIntroSlide);
                     const isActive = currentSlide === slideData.ordem;
                     
@@ -214,6 +252,13 @@ const CourseSidebar = () => {
                     
                     // Verificar se o slide foi visitado
                     const isVisited = answeredSlides.has(slideData.ordem);
+                    
+                    // Tooltip message
+                    const getTooltipMessage = () => {
+                      if (isExamLocked) return 'Complete todos os slides anteriores para desbloquear o exame';
+                      if (!isAccessible) return 'Complete os slides anteriores para desbloquear';
+                      return '';
+                    };
                     
                     const slideButton = (
                       <SidebarMenuItem key={slideData.id}>
@@ -254,7 +299,7 @@ const CourseSidebar = () => {
                               {slideButton}
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p className="text-xs">Complete todos os slides anteriores para desbloquear o exame</p>
+                              <p className="text-xs">{getTooltipMessage()}</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
