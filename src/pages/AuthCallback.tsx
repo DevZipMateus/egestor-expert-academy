@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Loader2, AlertCircle } from 'lucide-react';
 
+const EXPERT_EGESTOR_COURSE_ID = '550e8400-e29b-41d4-a716-446655440000';
+
 export default function AuthCallback() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +35,7 @@ export default function AuthCallback() {
 
         if (session?.user) {
           console.log('[AuthCallback] User authenticated:', session.user.email);
+          
           // Verificar se há curso pendente
           const pendingCourseId = localStorage.getItem('pendingCourseId');
           const pendingSlideNumber = localStorage.getItem('pendingSlideNumber') || '1';
@@ -41,8 +44,24 @@ export default function AuthCallback() {
             localStorage.removeItem('pendingCourseId');
             localStorage.removeItem('pendingSlideNumber');
             navigate(`/curso/${pendingCourseId}/${pendingSlideNumber}`, { replace: true });
+            return;
+          }
+          
+          // Buscar role do usuário para determinar redirecionamento
+          const { data: userRole } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+          
+          const role = userRole?.role || 'user';
+          console.log('[AuthCallback] User role:', role);
+          
+          if (role === 'user') {
+            // Usuário normal vai direto para o curso Expert eGestor
+            navigate(`/curso/${EXPERT_EGESTOR_COURSE_ID}/1`, { replace: true });
           } else {
-            // Successfully authenticated, redirect to dashboard
+            // Admin ou funcionário vai para o dashboard
             navigate('/dashboard', { replace: true });
           }
         } else {
