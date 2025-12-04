@@ -482,6 +482,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_progresso_usuario_profiles"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "progresso_usuario_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
