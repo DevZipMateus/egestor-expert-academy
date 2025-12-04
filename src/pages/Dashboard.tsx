@@ -28,6 +28,26 @@ const Dashboard = () => {
   const { role } = useUserRole(user?.email || null);
   const [courses, setCourses] = useState<CourseProgress[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState<string>('');
+
+  // Buscar nome do usuário
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      if (!user?.id) return;
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('nome')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      if (profile?.nome) {
+        setUserName(profile.nome);
+      }
+    };
+    
+    loadUserProfile();
+  }, [user]);
 
   useEffect(() => {
     const loadCourses = async () => {
@@ -141,7 +161,7 @@ const Dashboard = () => {
               <div className="flex items-center gap-3">
                 <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-full">
                   <User className="w-4 h-4 text-gray-500" />
-                  <span className="font-opensans text-sm text-gray-700">{user?.email}</span>
+                  <span className="font-opensans text-sm text-gray-700">{userName || user?.email}</span>
                 </div>
                 {role === 'admin' && (
                   <Button
