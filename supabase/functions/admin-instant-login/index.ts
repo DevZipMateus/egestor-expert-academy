@@ -30,7 +30,14 @@ serve(async (req) => {
     // Admin allowlist
     const ADMIN_EMAILS = [
       'mateus.pinto@zipline.com.br',
-      'joseph@zipline.com.br'
+      'joseph@zipline.com.br',
+      'louise@zipline.com.br',
+      'camilaw@zipline.com.br',
+      'juliana@zipline.com.br',
+      'gian@zipline.com.br',
+      'ricardo@zipline.com.br',
+      'alan@zipline.com.br',
+      'escobar@zipline.com.br'
     ];
 
     // Validate email is in allowlist
