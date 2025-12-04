@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Menu, Settings, Loader2 } from 'lucide-react';
+
+const EXPERT_EGESTOR_COURSE_ID = '550e8400-e29b-41d4-a716-446655440000';
 
 const isValidEmail = (email: string) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -21,15 +24,42 @@ export default function Auth() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isAuthenticated) {
+    const handleAuthRedirect = async () => {
+      if (!isAuthenticated) return;
+      
+      // Verificar se há curso pendente
       const pendingCourseId = localStorage.getItem('pendingCourseId');
       if (pendingCourseId) {
         localStorage.removeItem('pendingCourseId');
         navigate(`/curso/${pendingCourseId}/1`);
+        return;
+      }
+      
+      // Buscar role do usuário
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/dashboard');
+        return;
+      }
+      
+      const { data: userRole } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      const role = userRole?.role || 'user';
+      
+      if (role === 'user') {
+        // Usuário normal vai direto para o curso Expert eGestor
+        navigate(`/curso/${EXPERT_EGESTOR_COURSE_ID}/1`);
       } else {
+        // Admin ou funcionário vai para o dashboard
         navigate('/dashboard');
       }
-    }
+    };
+    
+    handleAuthRedirect();
   }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
