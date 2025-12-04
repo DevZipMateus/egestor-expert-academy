@@ -11,7 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { useCourseData } from '@/hooks/useCourseData';
+import { useCourseDataContext } from '@/contexts/CourseDataContext';
 import { Play, HelpCircle, AlertTriangle, FileText, Trophy, Lock, BookOpen, FastForward, CheckCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
@@ -25,7 +25,7 @@ const CourseSidebar = () => {
   const navigate = useNavigate();
   const { slide, courseId } = useParams();
   const currentSlide = parseInt(slide || '0');
-  const { slides, loading, useStaticData, answeredSlides } = useCourseData();
+  const { slides, loading, useStaticData, answeredSlides } = useCourseDataContext();
   const { user } = useAuth();
   const { isAdmin } = useUserRole(user?.email || null);
 

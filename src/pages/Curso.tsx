@@ -15,10 +15,10 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import CourseSidebar from "@/components/CourseSidebar";
 import SettingsDropdown from "@/components/SettingsDropdown";
 
-import { useCourseData } from "@/hooks/useCourseData";
+import { CourseDataProvider, useCourseDataContext } from "@/contexts/CourseDataContext";
 import { useAuth } from "@/contexts/AuthContext";
 
-const Curso = () => {
+const CursoContent = () => {
   const { courseId, slide } = useParams();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
@@ -46,7 +46,7 @@ const Curso = () => {
     saveExamAttempt,
     markSlideAsAnswered,
     getExerciseAnswer
-  } = useCourseData();
+  } = useCourseDataContext();
 
   const totalSlides = getTotalSlidesCount();
   const currentContent = getSlideByOrder(currentSlide);
@@ -258,19 +258,18 @@ const Curso = () => {
     }
 
     // Salvar tentativa no banco de dados
-    const result = await saveExamAttempt(
+    const examAttemptId = await saveExamAttempt(
       examId,
       score,
       passed,
       answers
     );
 
-    if (!result.success) {
+    if (!examAttemptId) {
       toast.error('Erro ao salvar resultado do exame. Tente novamente.');
       return;
     }
 
-    const examAttemptId = result.data?.id;
     setCurrentExamAttemptId(examAttemptId);
 
     setExamScore(score);
@@ -621,5 +620,11 @@ const Curso = () => {
     </SidebarProvider>
   );
 };
+
+const Curso = () => (
+  <CourseDataProvider>
+    <CursoContent />
+  </CourseDataProvider>
+);
 
 export default Curso;
