@@ -212,6 +212,9 @@ const CourseSidebar = () => {
                       ? getSlideLabel()
                       : `${slideData.ordem}. ${getSlideLabel()}`;
                     
+                    // Verificar se o slide foi visitado
+                    const isVisited = answeredSlides.has(slideData.ordem);
+                    
                     const slideButton = (
                       <SidebarMenuItem key={slideData.id}>
                         <SidebarMenuButton
@@ -220,8 +223,10 @@ const CourseSidebar = () => {
                             isActive 
                               ? 'bg-[#d61c00] text-white' 
                               : isLocked
-                              ? 'opacity-40 cursor-not-allowed text-[#52555b]'
-                              : 'hover:bg-gray-100 text-[#52555b]'
+                              ? 'opacity-40 cursor-not-allowed text-gray-400'
+                              : isVisited
+                              ? 'hover:bg-gray-100 text-[#52555b]'
+                              : 'opacity-50 text-gray-400 hover:bg-gray-50 hover:opacity-70'
                           }`}
                           disabled={isLocked}
                         >
