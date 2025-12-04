@@ -452,12 +452,17 @@ const Curso = () => {
         );
       
       case 'exam':
+        const handleGoBackToSlides = () => {
+          navigate(`/curso/${courseId}/1`);
+        };
+        
         return (
           <ExamSlide
             title={currentContent.title}
             getExamQuestions={() => getExamQuestions(currentContent.examId || undefined)}
             onExamComplete={handleExamComplete}
             onRequestCertificate={handleRequestCertificate}
+            onGoBackToSlides={handleGoBackToSlides}
             timeLimit={examTimeLimit}
           />
         );
