@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Menu, Settings } from 'lucide-react';
+import { Menu, Settings, Loader2 } from 'lucide-react';
 
 const isValidEmail = (email: string) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -149,7 +149,12 @@ export default function Auth() {
                   disabled={loading}
                   className="bg-[hsl(4,86%,55%)] hover:bg-[hsl(4,86%,45%)] text-white px-8 py-6 text-base font-medium disabled:opacity-50"
                 >
-                  {loading ? 'Entrando...' : 'Começar'}
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Entrando...
+                    </>
+                  ) : 'Começar'}
                 </Button>
               </div>
             </form>
