@@ -19,13 +19,17 @@ export default function Auth() {
   const [email, setEmail] = useState('');
   const [nome, setNome] = useState('');
   const [loading, setLoading] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [errors, setErrors] = useState<{ nome?: boolean; email?: boolean }>({});
   const { signInInstant, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     const handleAuthRedirect = async () => {
-      if (!isAuthenticated) return;
+      if (!isAuthenticated) {
+        setCheckingAuth(false);
+        return;
+      }
       
       // Verificar se há curso pendente
       const pendingCourseId = localStorage.getItem('pendingCourseId');
@@ -61,6 +65,17 @@ export default function Auth() {
     
     handleAuthRedirect();
   }, [isAuthenticated, navigate]);
+
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[hsl(0,0%,95%)]">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-[hsl(4,86%,55%)] animate-spin mx-auto mb-4" />
+          <p className="text-[hsl(0,0%,45%)]">Verificando acesso...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
