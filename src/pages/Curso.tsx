@@ -558,30 +558,35 @@ const CursoContent = () => {
                 <span className="text-sm md:text-base text-[#52555b] font-opensans whitespace-nowrap">
                   {currentSlide >= 1 ? `${currentSlide} de ${totalSlides}` : 'Introdução'}
                 </span>
-                <div className="flex space-x-1 overflow-x-auto max-w-[280px] md:max-w-[500px] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <div className="flex space-x-0.5 overflow-x-auto max-w-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   {Array.from({ length: 46 }, (_, i) => i + 1).map((slideOrder) => {
                     const isActive = slideOrder === currentSlide;
                     const isVisited = answeredSlides.has(slideOrder);
                     const canNavigate = isVisited || slideOrder <= maxVisitedSlide;
+                    const showNumber = [1, 10, 20, 30, 40, 46].includes(slideOrder);
                     
                     return (
-                      <button
-                        key={slideOrder}
-                        onClick={() => {
-                          if (canNavigate) {
-                            navigate(`/curso/${courseId}/${slideOrder}`);
-                          }
-                        }}
-                        disabled={!canNavigate}
-                        className={`w-2 h-2 md:w-2.5 md:h-2.5 rounded-full flex-shrink-0 transition-all ${
-                          isActive 
-                            ? 'bg-[#d61c00] scale-125' 
-                            : canNavigate 
-                              ? 'bg-gray-500 hover:bg-gray-600 cursor-pointer' 
-                              : 'bg-transparent border border-gray-400 cursor-not-allowed opacity-60'
-                        }`}
-                        title={canNavigate ? `Ir para slide ${slideOrder}` : 'Complete os slides anteriores'}
-                      />
+                      <div key={slideOrder} className="flex flex-col items-center">
+                        <button
+                          onClick={() => {
+                            if (canNavigate) {
+                              navigate(`/curso/${courseId}/${slideOrder}`);
+                            }
+                          }}
+                          disabled={!canNavigate}
+                          className={`w-2 h-2 md:w-2.5 md:h-2.5 rounded-full flex-shrink-0 transition-all ${
+                            isActive 
+                              ? 'bg-[#d61c00] scale-125' 
+                              : canNavigate 
+                                ? 'bg-gray-500 hover:bg-gray-600 cursor-pointer' 
+                                : 'bg-transparent border border-gray-400 cursor-not-allowed opacity-60'
+                          }`}
+                          title={canNavigate ? `Ir para slide ${slideOrder}` : 'Complete os slides anteriores'}
+                        />
+                        {showNumber && (
+                          <span className="text-[8px] text-gray-500 mt-0.5 leading-none">{slideOrder}</span>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
