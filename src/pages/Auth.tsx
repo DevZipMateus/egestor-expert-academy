@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Menu, Settings, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 const EXPERT_EGESTOR_COURSE_ID = '550e8400-e29b-41d4-a716-446655440000';
 
@@ -120,16 +120,6 @@ export default function Auth() {
     <div className="min-h-screen flex">
       {/* Left side - Form */}
       <div className="w-full lg:w-1/2 bg-[hsl(0,0%,95%)] flex flex-col">
-        {/* Icons */}
-        <div className="flex gap-2 p-4">
-          <button className="w-12 h-12 bg-[hsl(4,86%,55%)] flex items-center justify-center">
-            <Menu className="w-6 h-6 text-white" />
-          </button>
-          <button className="w-12 h-12 bg-[hsl(4,86%,55%)] flex items-center justify-center">
-            <Settings className="w-6 h-6 text-white" />
-          </button>
-        </div>
-
         {/* Form Content */}
         <div className="flex-1 flex items-center justify-center px-8">
           <div className="w-full max-w-md">
