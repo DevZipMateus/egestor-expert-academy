@@ -15,24 +15,56 @@ export default function AuthCallback() {
     const handleCallback = async () => {
       try {
         console.log('[AuthCallback] Processing magic link callback...');
+        console.log('[AuthCallback] Current URL:', window.location.href);
+        console.log('[AuthCallback] Hash:', window.location.hash);
         
-        // Wait for Supabase to process URL tokens (hash fragments)
-        // The SDK needs time to extract and process tokens from the URL
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Extract tokens from hash fragment
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const access_token = hashParams.get('access_token');
+        const refresh_token = hashParams.get('refresh_token');
         
-        console.log('[AuthCallback] Checking session after delay...');
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        console.log('[AuthCallback] Access token found:', !!access_token);
+        console.log('[AuthCallback] Refresh token found:', !!refresh_token);
+        
+        let session = null;
+        
+        // If we have tokens in the URL, set the session manually
+        if (access_token && refresh_token) {
+          console.log('[AuthCallback] Setting session from URL tokens...');
+          const { data, error: setSessionError } = await supabase.auth.setSession({
+            access_token,
+            refresh_token,
+          });
+          
+          if (setSessionError) {
+            console.error('[AuthCallback] Error setting session:', setSessionError);
+            setError('link-invalid');
+            setLoading(false);
+            return;
+          }
+          
+          session = data.session;
+          console.log('[AuthCallback] Session set successfully');
+          
+          // Clear the hash from URL for cleaner look
+          window.history.replaceState(null, '', window.location.pathname);
+        } else {
+          // No tokens in URL, check for existing session
+          console.log('[AuthCallback] No tokens in URL, checking existing session...');
+          const { data: { session: existingSession }, error: sessionError } = await supabase.auth.getSession();
+          
+          if (sessionError) {
+            console.error('[AuthCallback] Session error:', sessionError);
+            setError('link-invalid');
+            setLoading(false);
+            return;
+          }
+          
+          session = existingSession;
+        }
         
         console.log('[AuthCallback] Session:', session ? 'Found' : 'Not found');
-        console.log('[AuthCallback] Session error:', sessionError);
         
-        if (sessionError) {
-          console.error('[AuthCallback] Session error:', sessionError);
-          setError('link-invalid');
-          setLoading(false);
-          return;
-        }
-
         if (session?.user) {
           console.log('[AuthCallback] User authenticated:', session.user.email);
           
