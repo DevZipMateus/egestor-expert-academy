@@ -16,8 +16,22 @@ export default function AuthCallback() {
       try {
         console.log('[AuthCallback] Processing magic link callback...');
         console.log('[AuthCallback] Current URL:', window.location.href);
+        console.log('[AuthCallback] Search:', window.location.search);
         console.log('[AuthCallback] Hash:', window.location.hash);
         
+        // Support both implicit flow (hash tokens) and PKCE flow (code query param)
+        const searchParams = new URLSearchParams(window.location.search);
+        const code = searchParams.get('code');
+        const urlError = searchParams.get('error');
+        const urlErrorDescription = searchParams.get('error_description');
+
+        if (urlError) {
+          console.error('[AuthCallback] URL error:', urlError, urlErrorDescription);
+          setError('link-invalid');
+          setLoading(false);
+          return;
+        }
+
         // Extract tokens from hash fragment
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const access_token = hashParams.get('access_token');
@@ -25,11 +39,31 @@ export default function AuthCallback() {
         
         console.log('[AuthCallback] Access token found:', !!access_token);
         console.log('[AuthCallback] Refresh token found:', !!refresh_token);
+        console.log('[AuthCallback] PKCE code found:', !!code);
         
         let session = null;
+
+        // PKCE flow: exchange the ?code= for a session
+        if (code) {
+          console.log('[AuthCallback] Exchanging PKCE code for session...');
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+          if (exchangeError) {
+            console.error('[AuthCallback] Error exchanging code for session:', exchangeError);
+            setError('link-invalid');
+            setLoading(false);
+            return;
+          }
+
+          session = data.session;
+          console.log('[AuthCallback] Session created from PKCE code');
+
+          // Clear query/hash from URL for cleaner look
+          window.history.replaceState(null, '', window.location.pathname);
+        }
         
         // If we have tokens in the URL, set the session manually
-        if (access_token && refresh_token) {
+        if (!session && access_token && refresh_token) {
           console.log('[AuthCallback] Setting session from URL tokens...');
           const { data, error: setSessionError } = await supabase.auth.setSession({
             access_token,
@@ -48,7 +82,7 @@ export default function AuthCallback() {
           
           // Clear the hash from URL for cleaner look
           window.history.replaceState(null, '', window.location.pathname);
-        } else {
+        } else if (!session) {
           // No tokens in URL, check for existing session
           console.log('[AuthCallback] No tokens in URL, checking existing session...');
           const { data: { session: existingSession }, error: sessionError } = await supabase.auth.getSession();
