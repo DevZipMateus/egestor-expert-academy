@@ -1,7 +1,88 @@
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
+
+const EXPERT_EGESTOR_COURSE_ID = '550e8400-e29b-41d4-a716-446655440000';
+
 const Index = () => {
   const navigate = useNavigate();
+  const [processingAuth, setProcessingAuth] = useState(false);
+
+  useEffect(() => {
+    // Check if there are auth tokens in the URL (magic link callback to root)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const access_token = hashParams.get('access_token');
+    const refresh_token = hashParams.get('refresh_token');
+
+    if (access_token && refresh_token) {
+      setProcessingAuth(true);
+      console.log('[Index] Auth tokens detected, processing...');
+      
+      // Set the session and redirect
+      supabase.auth.setSession({ access_token, refresh_token })
+        .then(async ({ data, error }) => {
+          // Clear the hash from URL
+          window.history.replaceState(null, '', window.location.pathname);
+          
+          if (error) {
+            console.error('[Index] Error setting session:', error);
+            setProcessingAuth(false);
+            return;
+          }
+
+          if (data.session?.user) {
+            console.log('[Index] Session set successfully, redirecting...');
+            
+            // Check for pending course
+            const pendingCourseId = localStorage.getItem('pendingCourseId');
+            const pendingSlideNumber = localStorage.getItem('pendingSlideNumber') || '1';
+            if (pendingCourseId) {
+              localStorage.removeItem('pendingCourseId');
+              localStorage.removeItem('pendingSlideNumber');
+              navigate(`/curso/${pendingCourseId}/${pendingSlideNumber}`, { replace: true });
+              return;
+            }
+
+            // Check user role for redirect
+            const { data: userRole } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', data.session.user.id)
+              .maybeSingle();
+
+            const role = userRole?.role || 'user';
+            if (role === 'user') {
+              navigate(`/curso/${EXPERT_EGESTOR_COURSE_ID}/1`, { replace: true });
+            } else {
+              navigate('/dashboard', { replace: true });
+            }
+          } else {
+            setProcessingAuth(false);
+          }
+        })
+        .catch((err) => {
+          console.error('[Index] Auth processing error:', err);
+          setProcessingAuth(false);
+        });
+    }
+  }, [navigate]);
+
+  if (processingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[hsl(0,0%,95%)]">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-[hsl(4,86%,55%)] animate-spin mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-[hsl(0,0%,25%)] mb-2">
+            Confirmando seu acesso...
+          </h1>
+          <p className="text-[hsl(0,0%,45%)]">Por favor, aguarde</p>
+        </div>
+      </div>
+    );
+  }
+
   return <div className="min-h-screen relative" style={{
     backgroundColor: '#f7f7f7'
   }}>
