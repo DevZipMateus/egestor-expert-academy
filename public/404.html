@@ -6,18 +6,25 @@
   <script>
     // Fallback para SPA em servidores sem suporte a try_files
     // Captura a rota atual e redireciona para index.html com a rota como parâmetro
-    var pathSegmentsToKeep = 0;
-    var l = window.location;
-    
-    // Redireciona para a raiz com a rota original codificada no hash ou query
-    // O index.html vai processar e restaurar a rota correta
-    l.replace(
-      l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
-      l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
-      l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
-      (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
-      l.hash
-    );
+    (function() {
+      var l = window.location;
+      var path = l.pathname;
+      var search = l.search || '';
+      var hash = l.hash || '';
+      
+      // Codifica a rota no sessionStorage para preservar o hash fragment
+      // (hash fragments podem ser perdidos em alguns redirects)
+      if (path !== '/' || hash) {
+        sessionStorage.setItem('spa_redirect', JSON.stringify({
+          path: path,
+          search: search,
+          hash: hash
+        }));
+      }
+      
+      // Redireciona para a raiz
+      l.replace(l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') + '/');
+    })();
   </script>
 </head>
 <body>
