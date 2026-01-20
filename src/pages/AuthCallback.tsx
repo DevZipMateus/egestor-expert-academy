@@ -19,11 +19,32 @@ export default function AuthCallback() {
         console.log('[AuthCallback] Search:', window.location.search);
         console.log('[AuthCallback] Hash:', window.location.hash);
         
-        // Support both implicit flow (hash tokens) and PKCE flow (code query param)
-        const searchParams = new URLSearchParams(window.location.search);
+        // With HashRouter, the full hash is: #/auth/callback?code=...&... or #/auth/callback#access_token=...
+        // We need to parse the part after /auth/callback
+        const fullHash = window.location.hash; // e.g., #/auth/callback?code=xyz or #/auth/callback#access_token=xyz
+        
+        let searchPart = '';
+        let tokenPart = '';
+        
+        // Check for query params after the route (e.g., #/auth/callback?code=...)
+        const routeEnd = fullHash.indexOf('?');
+        if (routeEnd !== -1) {
+          searchPart = fullHash.substring(routeEnd);
+        }
+        
+        // Check for hash fragment after the route (e.g., #/auth/callback#access_token=...)
+        // This would be a double hash which browsers don't support well, so tokens usually come as query params
+        // But also check window.location.search for PKCE flow
+        if (window.location.search) {
+          searchPart = window.location.search;
+        }
+        
+        const searchParams = new URLSearchParams(searchPart);
         const code = searchParams.get('code');
         const urlError = searchParams.get('error');
         const urlErrorDescription = searchParams.get('error_description');
+        const access_token = searchParams.get('access_token');
+        const refresh_token = searchParams.get('refresh_token');
 
         if (urlError) {
           console.error('[AuthCallback] URL error:', urlError, urlErrorDescription);
@@ -31,11 +52,6 @@ export default function AuthCallback() {
           setLoading(false);
           return;
         }
-
-        // Extract tokens from hash fragment
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const access_token = hashParams.get('access_token');
-        const refresh_token = hashParams.get('refresh_token');
         
         console.log('[AuthCallback] Access token found:', !!access_token);
         console.log('[AuthCallback] Refresh token found:', !!refresh_token);
