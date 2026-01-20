@@ -4,6 +4,29 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Expert eGestor - Plataforma de Treinamento</title>
+    
+    <!-- IMPORTANTE: Script deve estar no HEAD para executar ANTES do React -->
+    <script type="text/javascript">
+      (function() {
+        var stored = sessionStorage.getItem('spa_redirect');
+        if (stored) {
+          sessionStorage.removeItem('spa_redirect');
+          try {
+            var data = JSON.parse(stored);
+            var newUrl = data.path + data.search + data.hash;
+            // Só redireciona se a URL for diferente da atual
+            if (newUrl !== '/' && newUrl !== window.location.pathname + window.location.search + window.location.hash) {
+              // Usar location.replace para fazer redirect REAL
+              // Isso garante que o React inicie com a URL correta
+              window.location.replace(newUrl);
+            }
+          } catch (e) {
+            console.error('Erro ao restaurar rota:', e);
+          }
+        }
+      })();
+    </script>
+
     <meta name="description" content="Plataforma de treinamento oficial do eGestor ERP" />
     <meta name="author" content="Zipline" />
     
@@ -21,23 +44,6 @@
 
   <body>
     <div id="root"></div>
-    <!-- Script para restaurar rotas do fallback 404.html -->
-    <script type="text/javascript">
-      (function() {
-        // Verifica se há um redirect salvo no sessionStorage
-        var stored = sessionStorage.getItem('spa_redirect');
-        if (stored) {
-          sessionStorage.removeItem('spa_redirect');
-          try {
-            var data = JSON.parse(stored);
-            var newUrl = data.path + data.search + data.hash;
-            window.history.replaceState(null, null, newUrl);
-          } catch (e) {
-            console.error('Erro ao restaurar rota:', e);
-          }
-        }
-      })();
-    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
