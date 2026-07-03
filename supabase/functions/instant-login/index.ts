@@ -38,36 +38,56 @@ serve(async (req) => {
       );
     }
 
+    console.log("[instant-login] Using supabaseUrl:", supabaseUrl);
+
+    // Direct fetch to admin API for better error visibility
+    const createRes = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
+      method: "POST",
+      headers: {
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        email_confirm: true,
+        user_metadata: { nome: name },
+      }),
+    });
+
+    const createText = await createRes.text();
+    console.log("[instant-login] createUser status:", createRes.status, "body:", createText.slice(0, 500));
+
+    if (!createRes.ok) {
+      let parsed: any = {};
+      try { parsed = JSON.parse(createText); } catch { /* html or plain text */ }
+      const code = parsed?.error_code || parsed?.code || "";
+      const msg = (parsed?.msg || parsed?.message || createText || "").toLowerCase();
+      const alreadyExists =
+        code === "email_exists" ||
+        msg.includes("already") ||
+        msg.includes("registered") ||
+        msg.includes("exists");
+
+      if (!alreadyExists) {
+        return new Response(
+          JSON.stringify({
+            error: "Erro ao criar usuário",
+            status: createRes.status,
+            details: createText.slice(0, 500),
+          }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      console.log("[instant-login] User already exists, proceeding");
+    } else {
+      console.log("[instant-login] User created");
+    }
+
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Try to create the user; if already exists, just continue.
-    const { error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      email_confirm: true,
-      user_metadata: { nome: name },
-    });
-
-    if (createError) {
-      const msg = (createError.message || "").toLowerCase();
-      const alreadyExists =
-        msg.includes("already") ||
-        msg.includes("registered") ||
-        msg.includes("exists") ||
-        (createError as any).code === "email_exists";
-
-      if (!alreadyExists) {
-        console.error("[instant-login] createUser error:", createError);
-        return new Response(
-          JSON.stringify({ error: "Erro ao criar usuário", details: createError.message }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      console.log("[instant-login] User already exists, proceeding to magic link");
-    } else {
-      console.log("[instant-login] User created");
-    }
 
     // Generate magic link
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
