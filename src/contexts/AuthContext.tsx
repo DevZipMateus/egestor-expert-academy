@@ -5,7 +5,7 @@ import { User, Session } from '@supabase/supabase-js';
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  signInInstant: (email: string, nome: string) => Promise<{ error: any; action_link?: string }>;
+  signInInstant: (email: string, nome: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
   loading: boolean;
@@ -58,15 +58,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const response = await fetch(`${supabaseUrl}/functions/v1/instant-login`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email,
-          name: nome,
-          redirectTo: `${window.location.origin}/auth/callback`,
-          supabaseUrl: supabaseUrl
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, name: nome }),
       });
 
       if (!response.ok) {
@@ -75,13 +68,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error: errorData };
       }
 
-      const data = await response.json();
-      return { error: null, action_link: data.action_link };
+      const { token_hash } = await response.json();
+
+      // Exchange token_hash for a real session — no redirect, no email
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        token_hash,
+        type: 'magiclink',
+      });
+
+      if (verifyError) {
+        console.error('[AuthContext] verifyOtp error:', verifyError);
+        return { error: verifyError };
+      }
+
+      return { error: null };
     } catch (error) {
       console.error('[AuthContext] Error calling instant login:', error);
       return { error };
     }
   };
+
 
   const signOut = async () => {
     await supabase.auth.signOut();

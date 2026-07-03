@@ -89,32 +89,35 @@ serve(async (req) => {
     });
 
 
-    // Generate magic link
+    // Generate a token_hash (no email sent, no redirect)
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",
       email,
-      options: {
-        redirectTo: redirectTo || `${supabaseUrl}/auth/callback`,
-      },
     });
 
     if (linkError) {
       console.error("[instant-login] generateLink error:", linkError);
       return new Response(
-        JSON.stringify({ error: "Erro ao gerar link de acesso", details: linkError.message }),
+        JSON.stringify({ error: "Erro ao gerar acesso", details: linkError.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("[instant-login] Magic link generated successfully");
+    const token_hash = (linkData as any)?.properties?.hashed_token;
+    if (!token_hash) {
+      return new Response(
+        JSON.stringify({ error: "Token não gerado" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log("[instant-login] token_hash generated");
 
     return new Response(
-      JSON.stringify({
-        action_link: linkData.properties.action_link,
-        email,
-      }),
+      JSON.stringify({ token_hash, email }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+
   } catch (error) {
     console.error("[instant-login] Unexpected error:", error);
     return new Response(

@@ -103,7 +103,7 @@ export default function Auth() {
 
     setLoading(true);
 
-    const { error, action_link } = await signInInstant(email.trim(), nome.trim());
+    const { error } = await signInInstant(email.trim(), nome.trim());
 
     if (error) {
       toast.error('Erro ao fazer login. Tente novamente.');
@@ -111,9 +111,8 @@ export default function Auth() {
       return;
     }
 
-    if (action_link) {
-      window.location.href = action_link;
-    }
+    // Session is set; the useEffect on isAuthenticated handles the redirect
+
   };
 
   return (
