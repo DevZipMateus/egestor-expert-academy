@@ -7,13 +7,12 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { email, name, redirectTo, supabaseUrl } = await req.json();
+    const { email, name, redirectTo } = await req.json();
 
     console.log("[instant-login] Request received for email:", email);
 
@@ -24,85 +23,65 @@ serve(async (req) => {
       );
     }
 
-    if (!supabaseUrl) {
-      return new Response(
-        JSON.stringify({ error: "supabaseUrl é obrigatório" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Get service role key from environment
+    // Use env vars from the edge runtime (never trust client-supplied URL)
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!serviceRoleKey) {
-      console.error("[instant-login] SUPABASE_SERVICE_ROLE_KEY not found");
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error("[instant-login] Missing env vars", {
+        hasUrl: !!supabaseUrl,
+        hasKey: !!serviceRoleKey,
+      });
       return new Response(
         JSON.stringify({ error: "Configuração do servidor inválida" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Create admin client
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
+      auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Check if user exists
-    const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-    
-    if (listError) {
-      console.error("[instant-login] Error listing users:", listError);
-      return new Response(
-        JSON.stringify({ error: "Erro ao verificar usuário" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // Try to create the user; if already exists, just continue.
+    const { error: createError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      email_confirm: true,
+      user_metadata: { nome: name },
+    });
 
-    const existingUser = existingUsers.users.find(
-      (u) => u.email?.toLowerCase() === email.toLowerCase()
-    );
+    if (createError) {
+      const msg = (createError.message || "").toLowerCase();
+      const alreadyExists =
+        msg.includes("already") ||
+        msg.includes("registered") ||
+        msg.includes("exists") ||
+        (createError as any).code === "email_exists";
 
-    let userId: string;
-
-    if (existingUser) {
-      console.log("[instant-login] User exists:", existingUser.id);
-      userId = existingUser.id;
-    } else {
-      // Create user with email confirmed
-      console.log("[instant-login] Creating new user");
-      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email: email,
-        email_confirm: true,
-        user_metadata: { nome: name },
-      });
-
-      if (createError) {
-        console.error("[instant-login] Error creating user:", createError);
+      if (!alreadyExists) {
+        console.error("[instant-login] createUser error:", createError);
         return new Response(
-          JSON.stringify({ error: "Erro ao criar usuário" }),
+          JSON.stringify({ error: "Erro ao criar usuário", details: createError.message }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-
-      userId = newUser.user.id;
-      console.log("[instant-login] User created:", userId);
+      console.log("[instant-login] User already exists, proceeding to magic link");
+    } else {
+      console.log("[instant-login] User created");
     }
 
     // Generate magic link
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",
-      email: email,
+      email,
       options: {
         redirectTo: redirectTo || `${supabaseUrl}/auth/callback`,
       },
     });
 
     if (linkError) {
-      console.error("[instant-login] Error generating link:", linkError);
+      console.error("[instant-login] generateLink error:", linkError);
       return new Response(
-        JSON.stringify({ error: "Erro ao gerar link de acesso" }),
+        JSON.stringify({ error: "Erro ao gerar link de acesso", details: linkError.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -112,14 +91,14 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         action_link: linkData.properties.action_link,
-        email: email,
+        email,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
     console.error("[instant-login] Unexpected error:", error);
     return new Response(
-      JSON.stringify({ error: "Erro interno do servidor" }),
+      JSON.stringify({ error: "Erro interno do servidor", details: (error as Error).message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
