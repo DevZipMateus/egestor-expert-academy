@@ -18,6 +18,7 @@ import Expert from "./pages/Expert";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Cadastro from "./pages/Cadastro";
+import OAuthConsent from "./pages/OAuthConsent";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/c/:courseSlug" element={<CourseAccess />} />
             <Route path="/curso/:courseId/:slide" element={<Curso />} />
             <Route path="/expert" element={<Expert />} />
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
